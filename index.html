@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0B1B3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Kese</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<style>
+/* ===================================================================
+   DESIGN TOKENS — tek kaynak. Hicbir yerde hard-coded renk yok.
+   =================================================================== */
+:root{
+  --navy-900:#0B1B3A;
+  --navy-800:#14264A;
+  --navy-600:#24406F;
+  --accent:#3B6FD4;
+  --accent-soft:#E8EFFB;
+  --bg:#F6F8FC;
+  --surface:#FFFFFF;
+  --border:#E3E8F1;
+  --text:#16233F;
+  --text-muted:#6B7A99;
+  --success:#1F9D74;
+  --danger:#D64545;
+  --warning:#E0A030;
+
+  --shadow:0 2px 8px rgba(11,27,58,.06);
+  --shadow-lg:0 8px 24px rgba(11,27,58,.12);
+  --fill-quiet:#EDF1F8;
+  --fill-disabled:#C7D3E8;
+  --danger-soft:#FAE9E9;
+  --success-soft:#E6F4EF;
+
+  --r-card:12px;
+  --r-input:8px;
+  --r-pill:999px;
+
+  /* 4/8 spacing */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+
+  /* type scale: 12/14/16/20/28 */
+  --t-xs:12px; --t-sm:14px; --t-md:16px; --t-lg:20px; --t-xl:28px;
+
+  --font:"Inter",system-ui,-apple-system,sans-serif;
+  --nav-h:60px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font);font-size:var(--t-sm);line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b));
+  overscroll-behavior-y:none;
+}
+button,input,select,textarea{font:inherit;color:inherit;margin:0}
+button{background:none;border:0;cursor:pointer;text-align:left}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ===================== BASLIK ===================== */
+.appbar{
+  position:sticky;top:0;z-index:30;
+  background:var(--navy-900);color:#fff;
+  padding:calc(var(--safe-t) + var(--s4)) var(--s4) var(--s4);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+}
+.appbar h1{font-size:var(--t-md);font-weight:700;margin:0;letter-spacing:.02em}
+.appbar .sub{font-size:var(--t-xs);color:#A9BBDC;margin-top:2px}
+.pill{
+  font-size:var(--t-xs);font-weight:600;color:#CFDCF3;
+  background:var(--navy-600);border-radius:var(--r-pill);
+  padding:var(--s1) var(--s3);white-space:nowrap;
+}
+
+main{padding:var(--s4);max-width:560px;margin:0 auto}
+.screen{display:none}
+.screen.on{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ===================== BILESENLER ===================== */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-card);box-shadow:var(--shadow);
+  padding:var(--s4);
+}
+.card + .card{margin-top:var(--s3)}
+
+.sec{display:flex;align-items:center;justify-content:space-between;margin:var(--s6) var(--s1) var(--s3)}
+.sec:first-child{margin-top:0}
+.sec h2{font-size:var(--t-md);font-weight:700;margin:0}
+.sec .hint{font-size:var(--t-xs);color:var(--text-muted);font-weight:500}
+
+.lbl{display:block;font-size:var(--t-xs);font-weight:600;color:var(--text-muted);margin-bottom:var(--s2)}
+
+.inp{
+  width:100%;min-height:48px;padding:0 var(--s3);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-input);outline:none;font-size:var(--t-md);
+}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea.inp{padding:var(--s3);min-height:48px;resize:none}
+select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
+.selwrap{position:relative}
+.selwrap .chev{position:absolute;right:var(--s3);top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+
+.seg{display:grid;gap:var(--s1);background:var(--fill-quiet);border-radius:10px;padding:var(--s1)}
+.seg button{
+  min-height:44px;border-radius:var(--r-input);text-align:center;
+  font-size:var(--t-sm);font-weight:600;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;gap:var(--s2);
+  transition:background .15s,color .15s;
+}
+.seg button.on{background:var(--surface);color:var(--navy-900);box-shadow:0 1px 3px rgba(11,27,58,.12)}
+
+.btn{
+  width:100%;min-height:48px;border-radius:10px;
+  background:var(--accent);color:#fff;
+  font-size:var(--t-md);font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:var(--s2);
+  transition:opacity .15s,transform .1s;
+}
+.btn:active{transform:scale(.99)}
+.btn[disabled]{background:var(--fill-disabled);pointer-events:none}
+.btn.sec{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn.dang{background:var(--surface);border:1px solid #F1C9C9;color:var(--danger)}
+
+.icon{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.icon.sm{width:16px;height:16px}
+.icon.lg{width:24px;height:24px}
+.cdot{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.field{margin-bottom:var(--s4)}
+.field:last-child{margin-bottom:0}
+
+/* ===================== OZET ===================== */
+.ringcard{display:flex;flex-direction:column;align-items:center;padding:var(--s5) var(--s4)}
+.ringwrap{position:relative;width:210px;height:210px}
+.ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.rtrack{fill:none;stroke:var(--fill-quiet);stroke-width:16}
+.rseg{fill:none;stroke-width:16;transition:stroke-dasharray .45s cubic-bezier(.3,1,.4,1)}
+.rpace{stroke:var(--navy-900);stroke-width:2;opacity:.45}
+.rcenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s1)}
+.rcenter .cap{font-size:var(--t-xs);font-weight:600;color:var(--text-muted)}
+.rcenter .big{font-size:var(--t-xl);font-weight:700}
+.rcenter .big.over{color:var(--danger)}
+.rcenter .sub{font-size:var(--t-xs);color:var(--text-muted)}
+.pacebar{
+  margin-top:var(--s4);display:flex;align-items:center;gap:var(--s2);
+  font-size:var(--t-xs);font-weight:600;
+  padding:var(--s2) var(--s3);border-radius:var(--r-pill);background:var(--fill-quiet);
+}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-top:var(--s3)}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);padding:var(--s3) var(--s2);text-align:center}
+.tile b{display:block;font-size:var(--t-md);font-weight:700}
+.tile span{display:block;font-size:var(--t-xs);color:var(--text-muted);margin-top:2px}
+.tile b.pos{color:var(--success)} .tile b.neg{color:var(--danger)}
+
+/* kategori satiri */
+.crow{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.crow:last-child{border-bottom:0;padding-bottom:0}
+.crow:first-child{padding-top:0}
+.crow .nm{font-size:var(--t-sm);font-weight:600;margin-bottom:var(--s1)}
+.track{height:6px;border-radius:var(--r-pill);background:var(--fill-quiet);overflow:hidden}
+.fill{height:100%;border-radius:var(--r-pill);transition:width .4s ease}
+.crow .amt{font-size:var(--t-sm);font-weight:700;text-align:right}
+.crow .pct{font-size:var(--t-xs);color:var(--text-muted);text-align:right}
+
+/* ===================== ISLEM LISTESI ===================== */
+.daygroup{margin-bottom:var(--s4)}
+.dayhead{display:flex;justify-content:space-between;padding:0 var(--s1) var(--s2);font-size:var(--t-xs);font-weight:600;color:var(--text-muted)}
+.tx{
+  display:grid;grid-template-columns:36px 1fr auto 44px;align-items:center;gap:var(--s3);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);
+  box-shadow:var(--shadow);padding:var(--s3);margin-bottom:var(--s2);
+  animation:fade .18s ease;
+}
+.tx .nm{font-size:var(--t-sm);font-weight:600}
+.tx .meta{display:flex;align-items:center;gap:var(--s1);font-size:var(--t-xs);color:var(--text-muted);margin-top:2px}
+.tx .amt{font-size:var(--t-sm);font-weight:700}
+.tx .amt.in{color:var(--success)}
+.txdel{width:44px;height:44px;display:grid;place-items:center;color:var(--text-muted);border-radius:var(--r-input)}
+.txdel:active{color:var(--danger);background:var(--danger-soft)}
+
+.empty{text-align:center;padding:var(--s8) var(--s5);border:1px dashed var(--border);border-radius:var(--r-card);background:var(--surface)}
+.empty .cdot{margin:0 auto var(--s3);background:var(--fill-quiet);color:var(--text-muted);width:44px;height:44px}
+.empty b{display:block;font-size:var(--t-sm);margin-bottom:var(--s1)}
+.empty span{font-size:var(--t-xs);color:var(--text-muted)}
+
+/* ===================== EKLE ===================== */
+.hero{
+  background:linear-gradient(135deg,var(--navy-900),var(--navy-600));
+  border-radius:var(--r-card);padding:var(--s5) var(--s4);color:#fff;
+  box-shadow:var(--shadow);
+}
+.hero .lbl{color:#A9BBDC;margin-bottom:var(--s2)}
+.heroin{display:flex;align-items:baseline;gap:var(--s2)}
+.heroin input{
+  flex:1;min-width:0;background:none;border:0;outline:none;color:#fff;
+  font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  padding:0;
+}
+.heroin input::placeholder{color:rgba(255,255,255,.35)}
+.heroin .cur{font-size:var(--t-lg);font-weight:600;color:#A9BBDC}
+
+.suggrow{display:flex;gap:var(--s2);overflow-x:auto;padding:var(--s1) 0 var(--s2);scrollbar-width:none}
+.suggrow::-webkit-scrollbar{display:none}
+.sugg{
+  flex:none;min-height:44px;display:flex;align-items:center;gap:var(--s2);
+  padding:0 var(--s3);border-radius:var(--r-pill);white-space:nowrap;
+  background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);
+  font-size:var(--t-sm);font-weight:600;
+}
+.sugg .v{font-size:var(--t-xs);color:var(--text-muted);font-variant-numeric:tabular-nums}
+.sugg:active{border-color:var(--accent)}
+
+.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2)}
+.ccell{
+  min-height:76px;padding:var(--s2) var(--s1);
+  border:1px solid var(--border);border-radius:var(--r-card);background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s1);
+  font-size:var(--t-xs);color:var(--text-muted);text-align:center;line-height:1.2;
+  transition:border-color .15s,background .15s;
+}
+.ccell.on{border-color:var(--accent);background:var(--accent-soft);color:var(--navy-900);font-weight:600}
+.ccell .cdot{width:32px;height:32px}
+
+.savebar{
+  position:sticky;bottom:calc(var(--nav-h) + var(--safe-b));
+  padding:var(--s3) 0 var(--s2);
+  background:linear-gradient(to top,var(--bg) 70%,transparent);
+  z-index:10;
+}
+
+/* ===================== ISTATISTIK ===================== */
+.rangebar{
+  position:sticky;top:calc(var(--safe-t) + 56px);z-index:20;
+  background:var(--bg);padding:var(--s2) 0 var(--s3);margin:0 0 var(--s1);
+}
+.rangebar .seg{grid-template-columns:repeat(5,1fr)}
+.rangebar .seg button{font-size:var(--t-xs);padding:0 var(--s1);min-height:40px}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);padding:var(--s3)}
+.kpi .k{font-size:var(--t-xs);color:var(--text-muted);display:flex;align-items:center;gap:var(--s1)}
+.kpi .v{font-size:var(--t-lg);font-weight:700;margin-top:var(--s1)}
+.kpi .v.sm{font-size:var(--t-md)}
+.trend{display:inline-flex;align-items:center;gap:2px;font-size:var(--t-xs);font-weight:700;padding:2px 6px;border-radius:var(--r-pill)}
+.trend.up{background:var(--danger-soft);color:var(--danger)}
+.trend.down{background:var(--success-soft);color:var(--success)}
+.trend.flat{background:var(--fill-quiet);color:var(--text-muted)}
+
+.chartbox{position:relative;height:220px}
+.chartbox.short{height:150px}
+.chartbox.tall{height:240px}
+
+.legend{margin-top:var(--s4)}
+.lg{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--border);font-size:var(--t-sm)}
+.lg:last-child{border-bottom:0}
+.lg .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.lg .nm{flex:1}
+.lg .v{font-weight:700;font-variant-numeric:tabular-nums}
+.lg .p{font-size:var(--t-xs);color:var(--text-muted);width:40px;text-align:right}
+
+.wtop{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.wtop b{font-size:var(--t-xl);font-weight:700}
+.wsub{font-size:var(--t-xs);color:var(--text-muted);margin-top:var(--s1)}
+.wrow{display:flex;justify-content:space-between;align-items:center;padding:var(--s3) 0;border-top:1px solid var(--border);font-size:var(--t-sm)}
+.wrow .k{display:flex;align-items:center;gap:var(--s2)}
+.wrow .k .cdot{width:28px;height:28px}
+.wrow .v{font-weight:700;font-variant-numeric:tabular-nums;margin-right:var(--s2)}
+
+/* ===================== AYARLAR ===================== */
+.list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden}
+.li{
+  display:flex;align-items:center;gap:var(--s3);width:100%;
+  min-height:56px;padding:var(--s2) var(--s4);
+  border-bottom:1px solid var(--border);font-size:var(--t-sm);
+}
+.li:last-child{border-bottom:0}
+.li .nm{flex:1;font-weight:600}
+.li .val{color:var(--text-muted);font-size:var(--t-xs)}
+.swatches{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.sw-btn{width:44px;height:44px;border-radius:var(--r-input);display:grid;place-items:center;border:2px solid transparent}
+.sw-btn i{display:block;width:24px;height:24px;border-radius:6px}
+.sw-btn.on{border-color:var(--navy-900)}
+.icgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--s2)}
+.ic-btn{height:44px;border-radius:var(--r-input);border:1px solid var(--border);display:grid;place-items:center;color:var(--text-muted)}
+.ic-btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+
+/* ===================== ALT MENU ===================== */
+.nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);
+  background:var(--navy-900);display:grid;grid-template-columns:repeat(4,1fr);
+}
+.nav button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:#7E93BC;font-size:11px;font-weight:600;min-height:44px;
+}
+.nav button.on{color:#fff}
+.nav button.on .icon{stroke-width:2}
+
+/* ===================== KATMANLAR ===================== */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(11,27,58,.45);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:560px;margin:0 auto;
+  background:var(--surface);border-radius:16px 16px 0 0;
+  padding:var(--s3) var(--s4) calc(var(--s5) + var(--safe-b));
+  transform:translateY(101%);transition:transform .24s cubic-bezier(.3,1,.4,1);
+  max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);
+}
+.sheet.on{transform:none}
+.grab{width:36px;height:4px;border-radius:var(--r-pill);background:var(--border);margin:0 auto var(--s4)}
+.sheet h3{font-size:var(--t-md);font-weight:700;margin:0 0 var(--s4)}
+
+.dialog{
+  position:fixed;left:var(--s4);right:var(--s4);top:50%;transform:translateY(-46%) scale(.97);
+  max-width:340px;margin:0 auto;z-index:52;
+  background:var(--surface);border-radius:var(--r-card);padding:var(--s5);
+  box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.18s;
+}
+.dialog.on{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1)}
+.dialog h4{margin:0 0 var(--s2);font-size:var(--t-md)}
+.dialog p{margin:0 0 var(--s5);font-size:var(--t-sm);color:var(--text-muted)}
+
+.toast{
+  position:fixed;left:var(--s4);right:var(--s4);bottom:calc(var(--nav-h) + var(--safe-b) + var(--s4));
+  max-width:520px;margin:0 auto;z-index:60;
+  background:var(--navy-900);color:#fff;border-radius:10px;
+  padding:var(--s3) var(--s4);font-size:var(--t-sm);font-weight:500;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  box-shadow:var(--shadow-lg);
+  opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s;
+}
+.toast.on{opacity:1;transform:none;pointer-events:auto}
+.toast button{color:#8FB4F5;font-weight:700;min-height:44px;display:flex;align-items:center}
+
+/* ===================== ISKELET ===================== */
+.sk{background:linear-gradient(90deg,var(--fill-quiet) 25%,#F7F9FD 50%,var(--fill-quiet) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:var(--r-card)}
+@keyframes shimmer{to{background-position:-200% 0}}
+#boot{padding:var(--s4);max-width:560px;margin:0 auto}
+
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="icondefs"></defs></svg>
+
+<header class="appbar">
+  <div><h1 id="barTitle">Kese</h1><div class="sub" id="barSub">Harcama defteri</div></div>
+  <div class="pill" id="barPill">—</div>
+</header>
+
+<div id="boot">
+  <div class="sk" style="height:250px"></div>
+  <div class="sk" style="height:72px;margin-top:12px"></div>
+  <div class="sk" style="height:180px;margin-top:12px"></div>
+</div>
+
+<main id="app" hidden>
+  <!-- ================= OZET ================= -->
+  <section class="screen on" id="s-ozet">
+    <div class="card ringcard">
+      <div class="ringwrap">
+        <svg viewBox="0 0 210 210">
+          <circle class="rtrack" cx="105" cy="105" r="88"></circle>
+          <g id="ringSegs"></g>
+          <line class="rpace" id="ringPace" x1="105" y1="9" x2="105" y2="25"></line>
+        </svg>
+        <div class="rcenter">
+          <div class="cap" id="ringCap">Kalan</div>
+          <div class="big num" id="ringBig">—</div>
+          <div class="sub num" id="ringSub">—</div>
+        </div>
+      </div>
+      <div class="pacebar"><span class="dot" id="paceDot"></span><span id="paceText">—</span></div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><b class="num pos" id="tIncome">—</b><span>Gelir</span></div>
+      <div class="tile"><b class="num neg" id="tExpense">—</b><span>Gider</span></div>
+      <div class="tile"><b class="num" id="tNet">—</b><span>Net</span></div>
+    </div>
+
+    <div class="sec"><h2>Bu ayın seyri</h2><span class="hint" id="trendHint"></span></div>
+    <div class="card"><div class="chartbox short"><canvas id="chTrend"></canvas></div></div>
+
+    <div class="sec"><h2>Kategoriler</h2><span class="hint" id="catHint"></span></div>
+    <div id="catBreak"></div>
+
+    <div class="sec"><h2>Son işlemler</h2></div>
+    <div id="recent"></div>
+  </section>
+
+  <!-- ================= EKLE ================= -->
+  <section class="screen" id="s-ekle">
+    <div class="hero">
+      <label class="lbl" for="fAmount">Tutar</label>
+      <div class="heroin">
+        <input id="fAmount" type="text" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="Tutar">
+        <span class="cur">₺</span>
+      </div>
+    </div>
+
+    <div class="suggrow" id="suggRow"></div>
+
+    <div class="card">
+      <div class="field">
+        <span class="lbl">İşlem türü</span>
+        <div class="seg" style="grid-template-columns:1fr 1fr" id="segType">
+          <button data-type="expense" class="on">Gider</button>
+          <button data-type="income">Gelir</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Kategori</span>
+        <div class="cgrid" id="catGrid"></div>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Ödeme türü</span>
+        <div class="seg" style="grid-template-columns:1fr 1fr" id="segPay">
+          <button data-pay="card" class="on">Kart</button>
+          <button data-pay="cash">Nakit</button>
+        </div>
+      </div>
+
+      <div class="field" id="cardField">
+        <label class="lbl" for="fCard">Hangi kart <span style="font-weight:400">(isteğe bağlı)</span></label>
+        <div class="selwrap">
+          <select class="inp" id="fCard"></select>
+          <span class="chev" data-ic="chevron"></span>
+        </div>
+      </div>
+
+      <div class="row2 field">
+        <div>
+          <label class="lbl" for="fDate">Tarih</label>
+          <input class="inp num" id="fDate" type="date">
+        </div>
+        <div>
+          <label class="lbl" for="fTime">Saat</label>
+          <input class="inp num" id="fTime" type="time">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="lbl" for="fNote">Açıklama <span style="font-weight:400">(isteğe bağlı)</span></label>
+        <input class="inp" id="fNote" type="text" maxlength="40" placeholder="Örn. sabah kahvesi">
+      </div>
+
+      <div class="field">
+        <span class="lbl">Tekrar eden işlem</span>
+        <div class="seg" style="grid-template-columns:repeat(3,1fr)" id="segRepeat">
+          <button data-rep="none" class="on">Yok</button>
+          <button data-rep="weekly">Haftalık</button>
+          <button data-rep="monthly">Aylık</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="savebar">
+      <button class="btn" id="btnSave" disabled>Kaydet</button>
+    </div>
+
+    <div class="sec"><h2>İşlemler</h2><span class="hint" id="txCount"></span></div>
+    <div id="txList"></div>
+  </section>
+
+  <!-- ================= ISTATISTIK ================= -->
+  <section class="screen" id="s-stat">
+    <div class="rangebar">
+      <div class="seg" id="segRange">
+        <button data-range="week">Hafta</button>
+        <button data-range="month" class="on">Ay</button>
+        <button data-range="q">3 Ay</button>
+        <button data-range="year">Yıl</button>
+        <button data-range="custom">Özel</button>
+      </div>
+      <div class="row2" id="customRange" style="display:none;margin-top:var(--s2)">
+        <input class="inp num" id="rFrom" type="date">
+        <input class="inp num" id="rTo" type="date">
+      </div>
+    </div>
+    <div id="statBody"></div>
+  </section>
+
+  <!-- ================= AYARLAR ================= -->
+  <section class="screen" id="s-ayar">
+    <div class="sec"><h2>Bütçe</h2></div>
+    <div class="card">
+      <div class="field">
+        <span class="lbl">Dönem</span>
+        <div class="seg" style="grid-template-columns:1fr 1fr" id="segPeriod">
+          <button data-period="weekly">Haftalık</button>
+          <button data-period="monthly">Aylık</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="fBudget">Bütçe tutarı</label>
+        <input class="inp num" id="fBudget" type="text" inputmode="numeric" placeholder="0">
+      </div>
+    </div>
+
+    <div class="sec"><h2>Kategoriler</h2><span class="hint">düzenlemek için dokun</span></div>
+    <div class="list" id="catSettings"></div>
+    <button class="btn sec" id="btnAddCat" style="margin-top:var(--s3)">Kategori ekle</button>
+
+    <div class="sec"><h2>Kartlar</h2><span class="hint">ödeme kaynağı</span></div>
+    <div class="list" id="cardSettings"></div>
+    <button class="btn sec" id="btnAddCard" style="margin-top:var(--s3)">Kart ekle</button>
+
+    <div class="sec"><h2>Veri</h2></div>
+    <button class="btn sec" id="btnExport" style="margin-bottom:var(--s2)">Yedeği indir</button>
+    <button class="btn dang" id="btnReset">Tüm verileri sil</button>
+    <p style="text-align:center;color:var(--text-muted);font-size:var(--t-xs);margin-top:var(--s4)">
+      Veriler yalnızca bu cihazda saklanır. Sürüm 2.0
+    </p>
+  </section>
+</main>
+
+<nav class="nav" id="nav">
+  <button data-tab="ozet" class="on"><span data-ic="pie"></span>Özet</button>
+  <button data-tab="ekle"><span data-ic="plus-circle"></span>Ekle</button>
+  <button data-tab="stat"><span data-ic="bar"></span>İstatistik</button>
+  <button data-tab="ayar"><span data-ic="settings"></span>Ayarlar</button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="scrim" id="scrim2"></div>
+<div class="dialog" id="dialog">
+  <h4 id="dlgTitle"></h4><p id="dlgText"></p>
+  <div class="row2">
+    <button class="btn sec" id="dlgNo">Vazgeç</button>
+    <button class="btn dang" id="dlgYes">Sil</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ===================================================================
+   KESE 2.0
+   Katmanlar: Store -> Model/Migration -> Hesap -> Render -> Etkilesim
+   =================================================================== */
+
+/* ---------- IKON SETI (Lucide tarzi, 1.5px stroke, currentColor) ---------- */
+const ICONS = {
+  'cart':'<path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 7H6"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="17.5" cy="20" r="1.2"/>',
+  'coffee':'<path d="M17 8h1.5a3 3 0 0 1 0 6H17M3 8h14v6a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM7 2v2.5M11 2v2.5"/>',
+  'droplet':'<path d="M12 2.7 6.8 8a7.4 7.4 0 1 0 10.4 0z"/>',
+  'cigarette':'<path d="M2 13h16v4H2zM20 13v4M22.5 13v4M18 9.5a2.5 2.5 0 0 0 0-5M14.5 9.5a2.5 2.5 0 0 1 0-5"/>',
+  'beer':'<path d="M17 11h1.5a2.8 2.8 0 0 1 0 5.6H17M9 12.5v4M13 12.5v4M5 8.5h12V18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3zM5 8.5a3 3 0 0 1 2.8-3 3 3 0 0 1 5-1.3 3 3 0 0 1 4.2 4.3"/>',
+  'utensils':'<path d="M5 3v6.5a2 2 0 0 0 4 0V3M7 11.5V21M16.5 3c-1.4 1.2-2 3-2 5s.9 3.2 2 3.2V21"/>',
+  'bus':'<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16H4zM4 16v2.5M20 16v2.5M7 11h10"/><circle cx="7.5" cy="19" r="1.2"/><circle cx="16.5" cy="19" r="1.2"/>',
+  'cookie':'<circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 10h.01M11 14h.01M15.5 15h.01"/>',
+  'receipt':'<path d="M5 3v18l2-1.2L9 21l2-1.2L13 21l2-1.2L17 21l2-1.2V3l-2 1.2L15 3l-2 1.2L11 3 9 4.2 7 3z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  'phone':'<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  'game':'<path d="M6.5 11h3.5M8.25 9.25v3.5M15 11h.01M17.5 13h.01"/><path d="M5 6.5h14a3 3 0 0 1 3 3l-.9 5.5a3 3 0 0 1-5.3 1.4L14.5 15h-5l-1.3 1.4a3 3 0 0 1-5.3-1.4L2 9.5a3 3 0 0 1 3-3z"/>',
+  'shirt':'<path d="M20.5 6.8 16 4.2a4 4 0 0 1-8 0L3.5 6.8a1 1 0 0 0-.4 1.3l1.5 3a1 1 0 0 0 1.3.5L8 10.7V20a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9.3l2.1 1a1 1 0 0 0 1.3-.5l1.5-3a1 1 0 0 0-.4-1.4z"/>',
+  'pill':'<path d="M10.5 20.4a4.9 4.9 0 0 1-6.9-6.9l6-6a4.9 4.9 0 0 1 6.9 6.9zM8.5 8.5l7 7"/>',
+  'package':'<path d="M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',
+  'home':'<path d="M3 10.5 12 3.2l9 7.3V20a1 1 0 0 1-1 1h-4.5v-6.5h-7V21H4a1 1 0 0 1-1-1z"/>',
+  'wallet':'<path d="M19 7.5V6a2 2 0 0 0-2-2H5.5A2.5 2.5 0 0 0 3 6.5v11A2.5 2.5 0 0 0 5.5 20H19a2 2 0 0 0 2-2V9.5a2 2 0 0 0-2-2H5.5a2.5 2.5 0 0 1 0-5"/><path d="M17 14h.01"/>',
+  'card':'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h3"/>',
+  'cash':'<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  'gift':'<rect x="3" y="8.5" width="18" height="4" rx="1"/><path d="M4.5 12.5V20a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-7.5M12 8.5V21"/><path d="M12 8.5S10.5 3 8 3a2.5 2.5 0 0 0 0 5.5zM12 8.5S13.5 3 16 3a2.5 2.5 0 0 1 0 5.5z"/>',
+  'book':'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"/><path d="M4 17.5h15"/>',
+  'trend-up':'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+  'plus':'<path d="M12 5v14M5 12h14"/>',
+  'plus-circle':'<circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/>',
+  'trash':'<path d="M4 6.5h16M9.5 6.5V4h5v2.5M6.5 6.5 7.5 20h9l1-13.5M10 10.5v6M14 10.5v6"/>',
+  'x':'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  'chevron':'<path d="M6 9.5l6 6 6-6"/>',
+  'calendar':'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  'clock':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/>',
+  'arrow-up':'<path d="M12 19V5.5M6 11.5l6-6 6 6"/>',
+  'arrow-down':'<path d="M12 5v13.5M6 12.5l6 6 6-6"/>',
+  'bar':'<path d="M5 20V10.5M12 20V4M19 20v-7"/>',
+  'pie':'<path d="M12 3.5v8.5h8.5"/><circle cx="12" cy="12" r="9"/>',
+  'settings':'<circle cx="12" cy="12" r="3"/><path d="M19.2 14.8a1.5 1.5 0 0 0 .3 1.7l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.5 1.5 0 0 0-2.6 1.1v.2a2 2 0 1 1-4 0v-.1a1.5 1.5 0 0 0-2.6-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.5 1.5 0 0 0-1.1-2.6h-.2a2 2 0 1 1 0-4h.1a1.5 1.5 0 0 0 1.1-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.5 1.5 0 0 0 2.6-1.1v-.2a2 2 0 1 1 4 0v.1a1.5 1.5 0 0 0 2.6 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.5 1.5 0 0 0 1.1 2.6h.2a2 2 0 1 1 0 4h-.1a1.5 1.5 0 0 0-1.4.9z"/>',
+  'edit':'<path d="M4 20h4.5L20 8.5 15.5 4 4 15.5zM14 5.5 18.5 10"/>',
+  'inbox':'<path d="M3 12h5l1.5 3h5L16 12h5"/><path d="M5.5 4h13l2.5 8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z"/>',
+  'tag':'<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.3"/>'
+};
+const CAT_ICONS = ['cart','coffee','droplet','cigarette','beer','utensils','bus','cookie','receipt','phone','game','shirt','pill','package','home','wallet','gift','book','card','tag'];
+
+function svgIcon(name, cls){
+  const d = ICONS[name] || ICONS.tag;
+  return `<svg class="icon ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+}
+function hydrateIcons(root){
+  (root||document).querySelectorAll('[data-ic]').forEach(el=>{
+    el.outerHTML = svgIcon(el.dataset.ic, el.dataset.cls || '');
+  });
+}
+
+/* ---------- DEPOLAMA ---------- */
+const KEY='kese-v1';
+const Store={
+  async get(){
+    try{
+      if(window.storage){const r=await window.storage.get(KEY);return r?JSON.parse(r.value):null;}
+      const raw=localStorage.getItem(KEY);return raw?JSON.parse(raw):null;
+    }catch(e){return null;}
+  },
+  async set(o){
+    const s=JSON.stringify(o);
+    try{
+      if(window.storage){await window.storage.set(KEY,s);return true;}
+      localStorage.setItem(KEY,s);return true;
+    }catch(e){toast('Kaydedilemedi. Depolama alanı dolu olabilir.');return false;}
+  }
+};
+
+/* ---------- KATEGORI RENK PALETI (acik zeminde AA kontrast) ---------- */
+const COLORS=['#3B6FD4','#1F9D74','#D64545','#E0A030','#7A5AF8','#0E9AA7','#C2557E','#8A6A4F','#24406F','#6B7A99'];
+
+/* ---------- VARSAYILAN MODEL ---------- */
+const DEFAULTS={
+  settings:{budget:0,period:'monthly',currency:'₺',catSeed:3,cards:[]},
+  categories:[
+    {id:'c9', name:'Sigara',    icon:'cigarette',color:'#D64545',kind:'expense'},
+    {id:'c10',name:'Su',        icon:'droplet',  color:'#0E9AA7',kind:'expense'},
+    {id:'c11',name:'Alkol',     icon:'beer',     color:'#E0A030',kind:'expense'},
+    {id:'c4', name:'Kahve',     icon:'coffee',   color:'#8A6A4F',kind:'expense'},
+    {id:'c2', name:'Yemek',     icon:'utensils', color:'#C2557E',kind:'expense'},
+    {id:'c1', name:'Market',    icon:'cart',     color:'#1F9D74',kind:'expense'},
+    {id:'c3', name:'Ulaşım',    icon:'bus',      color:'#3B6FD4',kind:'expense'},
+    {id:'c12',name:'Atıştırma', icon:'cookie',   color:'#8A6A4F',kind:'expense'},
+    {id:'c5', name:'Fatura',    icon:'receipt',  color:'#7A5AF8',kind:'expense'},
+    {id:'c13',name:'Abonelik',  icon:'phone',    color:'#24406F',kind:'expense'},
+    {id:'c6', name:'Eğlence',   icon:'game',     color:'#C2557E',kind:'expense'},
+    {id:'c14',name:'Giyim',     icon:'shirt',    color:'#7A5AF8',kind:'expense'},
+    {id:'c7', name:'Sağlık',    icon:'pill',     color:'#1F9D74',kind:'expense'},
+    {id:'c15',name:'Kira',      icon:'home',     color:'#24406F',kind:'expense'},
+    {id:'c8', name:'Diğer',     icon:'package',  color:'#6B7A99',kind:'expense'},
+    {id:'i1', name:'Burs',      icon:'book',     color:'#1F9D74',kind:'income'},
+    {id:'i2', name:'Harçlık',   icon:'wallet',   color:'#3B6FD4',kind:'income'},
+    {id:'i3', name:'Maaş',      icon:'card',     color:'#0E9AA7',kind:'income'},
+    {id:'i4', name:'Hediye',    icon:'gift',     color:'#C2557E',kind:'income'},
+    {id:'i5', name:'Diğer',     icon:'package',  color:'#6B7A99',kind:'income'}
+  ],
+  expenses:[]
+};
+/* emoji -> ikon gocu (1.x surumlerinden gelen veriler icin) */
+const EMOJI_MAP={'🛒':'cart','🍽️':'utensils','🚌':'bus','☕':'coffee','🧾':'receipt','🎮':'game','💊':'pill','📦':'package','🚬':'cigarette','💧':'droplet','🍺':'beer','🍫':'cookie','📱':'phone','👕':'shirt','🏠':'home'};
+const SEED_SUGG=['c9','c10','c4','c3'];
+
+let S=null, charts={}, ui={
+  tab:'ozet', type:'expense', pay:'card', cat:null, card:'', repeat:'none',
+  range:'month', from:'', to:'', editCat:null, catIcon:'tag', catColor:COLORS[0]
+};
+
+/* ---------- YARDIMCILAR ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const DAY=86400000;
+const nf0=new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0});
+const nf2=new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money=n=>nf0.format(Math.round(n))+' ₺';
+const moneyC=n=>{const a=Math.abs(n);return a>=100000?nf0.format(Math.round(n/1000))+'B ₺':money(n);};
+const parseAmt=v=>{const c=String(v).replace(/\s/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(c);return isNaN(n)?0:n;};
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const AYK=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const GUNLER=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+const GUNK=['Pzr','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const catById=id=>S.categories.find(c=>c.id===id)||{id,name:'Silinmiş',icon:'tag',color:'#6B7A99',kind:'expense'};
+const cardById=id=>(S.settings.cards||[]).find(c=>c.id===id);
+const isExp=e=>(e.type||'expense')==='expense';
+const sum=a=>a.reduce((t,e)=>t+e.amount,0);
+
+function toast(msg,label,fn){
+  const t=$('#toast');
+  t.innerHTML='<span>'+esc(msg)+'</span>';
+  if(label&&fn){
+    const b=document.createElement('button');b.textContent=label;
+    b.onclick=()=>{t.classList.remove('on');fn();};
+    t.appendChild(b);
+  }
+  t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),label?5000:2200);
+}
+function haptic(){ if(navigator.vibrate) navigator.vibrate(12); }
+
+function confirmDlg(title,text,okLabel){
+  return new Promise(res=>{
+    $('#dlgTitle').textContent=title;$('#dlgText').textContent=text;
+    $('#dlgYes').textContent=okLabel||'Sil';
+    $('#dialog').classList.add('on');$('#scrim2').classList.add('on');
+    const close=v=>{$('#dialog').classList.remove('on');$('#scrim2').classList.remove('on');res(v);};
+    $('#dlgYes').onclick=()=>close(true);
+    $('#dlgNo').onclick=()=>close(false);
+    $('#scrim2').onclick=()=>close(false);
+  });
+}
+function openSheet(html){
+  $('#sheetBody').innerHTML=html;hydrateIcons($('#sheetBody'));
+  $('#sheet').classList.add('on');$('#scrim').classList.add('on');
+}
+function closeSheet(){$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');}
+
+/* ---------- DONEM MATEMATIGI ---------- */
+function weekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+function periodStart(d,p){return p==='weekly'?weekStart(d):new Date(d.getFullYear(),d.getMonth(),1);}
+function periodEnd(s,p){const e=new Date(s);p==='weekly'?e.setDate(e.getDate()+7):e.setMonth(e.getMonth()+1);return e;}
+function shiftPeriod(s,p,n){const d=new Date(s);p==='weekly'?d.setDate(d.getDate()+7*n):d.setMonth(d.getMonth()+n);return d;}
+function periodLabel(s,p){
+  if(p==='weekly'){const e=new Date(s);e.setDate(e.getDate()+6);
+    return s.getDate()+(e.getMonth()===s.getMonth()?'':' '+AYK[s.getMonth()])+'–'+e.getDate()+' '+AYK[e.getMonth()];}
+  return AYLAR[s.getMonth()]+' '+s.getFullYear();
+}
+const inR=(ts,a,b)=>{const t=new Date(ts).getTime();return t>=a.getTime()&&t<b.getTime();};
+const txIn=(a,b)=>S.expenses.filter(e=>inR(e.ts,a,b));
+const expIn=(a,b)=>txIn(a,b).filter(isExp);
+function currentPeriod(){const p=S.settings.period,s=periodStart(new Date(),p);return{start:s,end:periodEnd(s,p),p};}
+function dataSpanDays(){
+  if(!S.expenses.length)return 0;
+  const f=Math.min(...S.expenses.map(e=>+new Date(e.ts.slice(0,10)+'T00:00:00')));
+  return Math.floor((Date.now()-f)/DAY)+1;
+}
+
+/* ---------- MIGRATION ---------- */
+function migrate(){
+  const seed=S.settings.catSeed||1;
+
+  /* 1.x -> 2.0 : kategori setini genislet, emoji ikonlari isim tabanli ikona cevir */
+  if(seed<3){
+    const mine=S.categories||[];
+    const merged=[];
+    DEFAULTS.categories.forEach(d=>{
+      const own=mine.find(c=>c.id===d.id);
+      if(own){
+        if(!ICONS[own.icon]) own.icon=EMOJI_MAP[own.icon]||d.icon;
+        if(!own.kind) own.kind=d.kind;
+        if(!/^#[0-9A-Fa-f]{6}$/.test(own.color)) own.color=d.color;
+        merged.push(own);
+      } else merged.push({...d});
+    });
+    mine.forEach(c=>{
+      if(merged.some(m=>m.id===c.id))return;
+      if(!ICONS[c.icon]) c.icon=EMOJI_MAP[c.icon]||'tag';
+      if(!c.kind) c.kind='expense';
+      merged.push(c);
+    });
+    S.categories=merged;
+    S.settings.catSeed=3;
+  }
+
+  /* islem semasi: paymentMethod + type + cardId. Hicbir kayit silinmez. */
+  let touched=0;
+  S.expenses.forEach(e=>{
+    if(!e.paymentMethod){e.paymentMethod='card';touched++;}
+    if(!e.type){e.type='expense';touched++;}
+    if(e.cardId===undefined)e.cardId='';
+    if(e.repeat===undefined)e.repeat='none';
+  });
+  if(!Array.isArray(S.settings.cards))S.settings.cards=[];
+  return touched;
+}
+
+/* ===================================================================
+   RENDER
+   =================================================================== */
+const R=88, CIRC=2*Math.PI*R;
+
+function render(){
+  drawBar(); drawOzet(); drawEkle(); drawAyar();
+  if(ui.tab==='stat') drawStat();
+  hydrateIcons(document);
+}
+async function save(){ await Store.set(S); render(); }
+
+function drawBar(){
+  const {start,p}=currentPeriod();
+  const titles={ozet:'Özet',ekle:'İşlem ekle',stat:'İstatistik',ayar:'Ayarlar'};
+  const subs={ozet:'Harcama defteri',ekle:'Gelir veya gider kaydet',stat:'Harcama analizi',ayar:'Bütçe ve kategoriler'};
+  $('#barTitle').textContent=titles[ui.tab];
+  $('#barSub').textContent=subs[ui.tab];
+  $('#barPill').textContent=periodLabel(start,p);
+  $('#barPill').style.display=ui.tab==='ozet'?'':'none';
+}
+
+/* ------------------------- OZET ------------------------- */
+function drawOzet(){
+  const {start,end}=currentPeriod();
+  const all=txIn(start,end), items=all.filter(isExp);
+  const budget=S.settings.budget, spent=sum(items);
+  const income=sum(all.filter(e=>!isExp(e)));
+
+  const byCat={};items.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amount);
+  const parts=Object.entries(byCat).map(([id,v])=>({c:catById(id),v})).sort((a,b)=>b.v-a.v);
+
+  const over=budget>0&&spent>budget;
+  const base=budget>0?(over?spent:budget):Math.max(spent,1);
+  const g=$('#ringSegs');g.innerHTML='';let off=0;
+  parts.forEach(p=>{
+    const len=(p.v/base)*CIRC;
+    const el=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    el.setAttribute('class','rseg');el.setAttribute('cx',105);el.setAttribute('cy',105);el.setAttribute('r',R);
+    el.setAttribute('stroke',p.c.color);
+    el.setAttribute('stroke-dasharray',Math.max(len-1.5,0)+' '+CIRC);
+    el.setAttribute('stroke-dashoffset',-off);
+    g.appendChild(el);off+=len;
+  });
+
+  if(budget<=0){
+    $('#ringCap').textContent='Harcanan';$('#ringBig').textContent=money(spent);
+    $('#ringBig').classList.remove('over');$('#ringSub').textContent='Bütçe belirlenmedi';
+  }else if(over){
+    $('#ringCap').textContent='Bütçe aşımı';$('#ringBig').textContent='+'+money(spent-budget);
+    $('#ringBig').classList.add('over');$('#ringSub').textContent=money(spent)+' / '+money(budget);
+  }else{
+    $('#ringCap').textContent='Kalan';$('#ringBig').textContent=money(budget-spent);
+    $('#ringBig').classList.remove('over');$('#ringSub').textContent=money(spent)+' harcandı';
+  }
+
+  const now=new Date(),total=end-start,el=Math.min(Math.max(now-start,0),total),frac=el/total;
+  $('#ringPace').setAttribute('transform','rotate('+(frac*360)+' 105 105)');
+  const dot=$('#paceDot'),txt=$('#paceText');
+  if(budget<=0){dot.style.background='var(--text-muted)';txt.textContent='Tempo için bütçe gerekiyor';}
+  else{
+    const d=spent-budget*frac;
+    if(Math.abs(d)<budget*.03){dot.style.background='var(--accent)';txt.textContent='Tam tempoda';}
+    else if(d>0){dot.style.background='var(--danger)';txt.textContent='Tempo üstünde · '+money(d)+' fazla';}
+    else{dot.style.background='var(--success)';txt.textContent='Tempo altında · '+money(-d)+' önde';}
+  }
+
+  $('#tIncome').textContent=moneyC(income);
+  $('#tExpense').textContent=moneyC(spent);
+  const net=income-spent;
+  const nEl=$('#tNet');nEl.textContent=moneyC(net);
+  nEl.className='num '+(net>0?'pos':net<0?'neg':'');
+
+  $('#catHint').textContent=parts.length?parts.length+' kategori':'';
+  $('#catBreak').innerHTML=parts.length
+    ? '<div class="card">'+parts.map(p=>`
+        <div class="crow">
+          <span class="cdot" style="background:${p.c.color}1A;color:${p.c.color}">${svgIcon(p.c.icon)}</span>
+          <span><span class="nm">${esc(p.c.name)}</span>
+            <span class="track"><span class="fill" style="width:${p.v/parts[0].v*100}%;background:${p.c.color}"></span></span>
+          </span>
+          <span><span class="amt num">${money(p.v)}</span><span class="pct num">%${spent?Math.round(p.v/spent*100):0}</span></span>
+        </div>`).join('')+'</div>'
+    : emptyState('inbox','Bu dönem boş','Ekle sekmesinden ilk işlemini kaydet.');
+
+  const last=[...S.expenses].sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,5);
+  $('#recent').innerHTML=last.length?txListHTML(last):emptyState('inbox','Kayıt yok','Kaydettiğin işlemler burada görünür.');
+
+  drawTrendChart(start,end);
+}
+
+function emptyState(ic,title,text){
+  return `<div class="empty"><span class="cdot">${svgIcon(ic)}</span><b>${esc(title)}</b><span>${esc(text)}</span></div>`;
+}
+
+/* islem listesi */
+function txListHTML(list){
+  const groups={};
+  list.forEach(e=>{const k=e.ts.slice(0,10);(groups[k]=groups[k]||[]).push(e);});
+  return Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,items])=>{
+    const net=items.reduce((t,e)=>t+(isExp(e)?e.amount:0),0);
+    return `<div class="daygroup">
+      <div class="dayhead"><span>${dayLabel(k)}</span><span class="num">${money(net)}</span></div>
+      ${items.sort((a,b)=>b.ts.localeCompare(a.ts)).map(txHTML).join('')}
+    </div>`;
+  }).join('');
+}
+function dayLabel(k){
+  const d=new Date(k+'T00:00:00'),t=iso(new Date()),y=new Date();y.setDate(y.getDate()-1);
+  if(k===t)return 'Bugün';
+  if(k===iso(y))return 'Dün';
+  return d.getDate()+' '+AYLAR[d.getMonth()]+' '+GUNK[d.getDay()];
+}
+function txHTML(e){
+  const c=catById(e.cat),inc=!isExp(e);
+  const card=cardById(e.cardId);
+  const payIc=e.paymentMethod==='cash'?'cash':'card';
+  const payTxt=e.paymentMethod==='cash'?'Nakit':(card?card.name:'Kart');
+  return `<div class="tx">
+    <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+    <span>
+      <span class="nm">${esc(e.note||c.name)}</span>
+      <span class="meta">${svgIcon(payIc,'sm')}${esc(payTxt)} · ${e.ts.slice(11,16)}${e.note?' · '+esc(c.name):''}</span>
+    </span>
+    <span class="amt num ${inc?'in':''}">${inc?'+':''}${money(e.amount)}</span>
+    <button class="txdel" data-del="${e.id}" aria-label="Sil">${svgIcon('x')}</button>
+  </div>`;
+}
+
+/* ------------------------- EKLE ------------------------- */
+function suggestions(limit){
+  const now=Date.now(),M30=30*DAY,g={};
+  S.expenses.filter(isExp).forEach(e=>{
+    const key=e.cat+'|'+(e.note||'').trim().toLowerCase();
+    const o=g[key]||(g[key]={cat:e.cat,note:e.note||'',n:0,score:0,amts:{},last:'',pay:e.paymentMethod});
+    const fresh=(now-new Date(e.ts).getTime())<M30;
+    o.n++;o.score+=fresh?2:1;o.amts[e.amount]=(o.amts[e.amount]||0)+(fresh?2:1);
+    if(e.ts>o.last){o.last=e.ts;o.pay=e.paymentMethod;}
+  });
+  const out=Object.values(g)
+    .filter(o=>o.n>=2&&S.categories.some(c=>c.id===o.cat))
+    .sort((a,b)=>b.score-a.score||b.last.localeCompare(a.last))
+    .slice(0,limit)
+    .map(o=>({cat:o.cat,note:o.note,pay:o.pay,amount:+Object.entries(o.amts).sort((a,b)=>b[1]-a[1])[0][0]}));
+  if(out.length<3){
+    SEED_SUGG.forEach(id=>{
+      if(out.length>=4||out.some(o=>o.cat===id)||!S.categories.some(c=>c.id===id))return;
+      out.push({cat:id,note:'',amount:0,pay:'card'});
+    });
+  }
+  return out;
+}
+
+function drawEkle(){
+  /* oneriler */
+  const sg=suggestions(6);
+  $('#suggRow').innerHTML=sg.map((s,i)=>{
+    const c=catById(s.cat);
+    return `<button class="sugg" data-sg="${i}">
+      <span style="color:${c.color}">${svgIcon(c.icon,'sm')}</span>
+      ${esc(s.note||c.name)}${s.amount?`<span class="v">${nf0.format(s.amount)} ₺</span>`:''}
+    </button>`;
+  }).join('');
+  $$('#suggRow [data-sg]').forEach(b=>b.onclick=()=>{
+    const s=sg[+b.dataset.sg];
+    ui.type='expense';ui.cat=s.cat;ui.pay=s.pay||'card';
+    if(s.amount)$('#fAmount').value=nf0.format(s.amount);
+    $('#fNote').value=s.note||'';
+    syncSegs();drawCatGrid();validate();haptic();
+  });
+
+  drawCatGrid();
+  /* kart listesi */
+  const cards=S.settings.cards||[];
+  $('#fCard').innerHTML='<option value="">Belirtme</option>'+
+    cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('#fCard').value=ui.card;
+  $('#cardField').style.display=ui.pay==='card'?'':'none';
+
+  const list=[...S.expenses].sort((a,b)=>b.ts.localeCompare(a.ts));
+  $('#txCount').textContent=list.length?list.length+' kayıt':'';
+  $('#txList').innerHTML=list.length?txListHTML(list.slice(0,60))
+    :emptyState('inbox','Defter boş','İlk işlemini yukarıdan ekle.');
+  syncSegs();
+}
+
+function drawCatGrid(){
+  const cats=S.categories.filter(c=>(c.kind||'expense')===ui.type);
+  if(ui.cat&&!cats.some(c=>c.id===ui.cat))ui.cat=null;
+  $('#catGrid').innerHTML=cats.map(c=>`
+    <button class="ccell ${c.id===ui.cat?'on':''}" data-cat="${c.id}">
+      <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+      ${esc(c.name)}
+    </button>`).join('');
+  $$('#catGrid [data-cat]').forEach(b=>b.onclick=()=>{
+    ui.cat=b.dataset.cat;drawCatGrid();validate();haptic();
+  });
+}
+function syncSegs(){
+  $$('#segType button').forEach(b=>b.classList.toggle('on',b.dataset.type===ui.type));
+  $$('#segPay button').forEach(b=>b.classList.toggle('on',b.dataset.pay===ui.pay));
+  $$('#segRepeat button').forEach(b=>b.classList.toggle('on',b.dataset.rep===ui.repeat));
+  $('#cardField').style.display=ui.pay==='card'?'':'none';
+}
+function validate(){
+  const ok=parseAmt($('#fAmount').value)>0&&!!ui.cat;
+  $('#btnSave').disabled=!ok;
+  $('#btnSave').textContent=ui.type==='income'?'Geliri kaydet':'Gideri kaydet';
+  return ok;
+}
+function resetForm(){
+  $('#fAmount').value='';$('#fNote').value='';
+  const n=new Date();$('#fDate').value=iso(n);$('#fTime').value=pad(n.getHours())+':'+pad(n.getMinutes());
+  ui.repeat='none';ui.cat=null;
+  syncSegs();drawCatGrid();validate();
+}
+
+/* ------------------------- AYARLAR ------------------------- */
+function drawAyar(){
+  $$('#segPeriod button').forEach(b=>b.classList.toggle('on',b.dataset.period===S.settings.period));
+  const inp=$('#fBudget');
+  if(document.activeElement!==inp)inp.value=S.settings.budget?nf0.format(S.settings.budget):'';
+
+  $('#catSettings').innerHTML=S.categories.map(c=>`
+    <button class="li" data-editcat="${c.id}">
+      <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+      <span class="nm">${esc(c.name)}</span>
+      <span class="val">${c.kind==='income'?'Gelir':'Gider'}</span>
+      ${svgIcon('chevron','sm')}
+    </button>`).join('');
+
+  const cards=S.settings.cards||[];
+  $('#cardSettings').innerHTML=cards.length?cards.map(c=>`
+    <div class="li">
+      <span class="cdot" style="background:var(--accent-soft);color:var(--accent)">${svgIcon('card')}</span>
+      <span class="nm">${esc(c.name)}</span>
+      <button class="txdel" data-delcard="${c.id}" aria-label="Sil">${svgIcon('trash')}</button>
+    </div>`).join('')
+    :`<div class="li" style="color:var(--text-muted)">Kart eklenmedi</div>`;
+}
+
+/* ===================================================================
+   ISTATISTIK — Chart.js
+   Gerekce: proje vanilla JS ve build adimi yok. Chart.js tek <script>
+   ile gelir, canvas tabanli oldugu icin dokunmatik tooltip hazir gelir.
+   Recharts React gerektirirdi, tum mimari degisirdi.
+   =================================================================== */
+const CH_FONT={family:'Inter',size:11};
+const TOK=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+
+function chartReady(){ return typeof Chart!=='undefined'; }
+function kill(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function mk(id,cfg){
+  const el=document.getElementById(id); if(!el||!chartReady())return;
+  kill(id);
+  cfg.options=Object.assign({
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:TOK('--navy-900'),padding:10,cornerRadius:8,
+        titleFont:CH_FONT,bodyFont:CH_FONT,displayColors:true,boxPadding:4,
+        callbacks:{label:c=>' '+(c.dataset.label?c.dataset.label+': ':'')+money(c.parsed.y??c.parsed)}
+      }
+    }
+  },cfg.options||{});
+  charts[id]=new Chart(el,cfg);
+}
+const axis=(extra)=>Object.assign({
+  grid:{color:TOK('--border'),drawTicks:false},
+  border:{display:false},
+  ticks:{color:TOK('--text-muted'),font:CH_FONT,padding:6}
+},extra||{});
+
+/* Ozet ekranindaki mini trend */
+function drawTrendChart(start,end){
+  if(!chartReady())return;
+  const days=Math.round((end-start)/DAY), now=new Date();
+  const labels=[],data=[];let acc=0;
+  for(let i=0;i<days;i++){
+    const d=new Date(start);d.setDate(d.getDate()+i);
+    if(d>now)break;
+    const n=new Date(d);n.setDate(n.getDate()+1);
+    acc+=sum(expIn(d,n));
+    labels.push(d.getDate()+' '+AYK[d.getMonth()]);data.push(acc);
+  }
+  $('#trendHint').textContent=data.length?'kümülatif':'';
+  mk('chTrend',{
+    type:'line',
+    data:{labels,datasets:[{
+      data,borderColor:TOK('--accent'),borderWidth:2,tension:.3,
+      pointRadius:0,pointHoverRadius:4,fill:true,
+      backgroundColor:ctx=>{
+        const {chart}=ctx;if(!chart.chartArea)return 'transparent';
+        const g=chart.ctx.createLinearGradient(0,chart.chartArea.top,0,chart.chartArea.bottom);
+        g.addColorStop(0,'rgba(59,111,212,.22)');g.addColorStop(1,'rgba(59,111,212,0)');return g;
+      }
+    }]},
+    options:{scales:{x:axis({grid:{display:false}}),y:axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}})}}
+  });
+}
+
+/* --------- aralik hesabi --------- */
+function statRange(){
+  const now=new Date();
+  if(ui.range==='week'){const s=weekStart(now);return{s,e:new Date(Math.min(+periodEnd(s,'weekly'),+now+1)),name:'Bu hafta',len:7};}
+  if(ui.range==='month'){const s=new Date(now.getFullYear(),now.getMonth(),1);return{s,e:now,name:AYLAR[now.getMonth()],len:new Date(now.getFullYear(),now.getMonth()+1,0).getDate()};}
+  if(ui.range==='q'){const s=new Date(now.getFullYear(),now.getMonth()-2,1);return{s,e:now,name:'Son 3 ay',len:Math.round((now-s)/DAY)};}
+  if(ui.range==='year'){const s=new Date(now.getFullYear(),0,1);return{s,e:now,name:now.getFullYear()+'',len:Math.round((now-s)/DAY)};}
+  const a=ui.from?new Date(ui.from+'T00:00:00'):new Date(now.getFullYear(),now.getMonth(),1);
+  const b=ui.to?new Date(ui.to+'T23:59:59'):now;
+  return{s:a,e:b,name:'Özel aralık',len:Math.max(Math.round((b-a)/DAY),1)};
+}
+function prevRange(r){
+  const span=r.e-r.s;
+  return{s:new Date(+r.s-span),e:new Date(+r.s)};
+}
+
+function drawStat(){
+  const body=$('#statBody');
+  if(!S.expenses.length){
+    body.innerHTML=emptyState('bar','Analiz için veri yok','Birkaç işlem ekledikten sonra grafikler burada oluşur.');
+    hydrateIcons(body);return;
+  }
+  if(!chartReady()){
+    body.innerHTML=emptyState('bar','Grafikler yüklenemedi','İnternet bağlantısı olmadan ilk açılışta grafik kütüphanesi indirilemez.');
+    hydrateIcons(body);return;
+  }
+
+  const r=statRange(), pr=prevRange(r);
+  const items=expIn(r.s,r.e), prevItems=expIn(pr.s,pr.e);
+  const total=sum(items), prevTotal=sum(prevItems);
+  const days=Math.max(Math.round((r.e-r.s)/DAY),1);
+
+  /* gunluk kirilim, en yuksek gun */
+  const byDay={};items.forEach(e=>byDay[e.ts.slice(0,10)]=(byDay[e.ts.slice(0,10)]||0)+e.amount);
+  const top=Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+
+  const pct=prevTotal>0?Math.round((total-prevTotal)/prevTotal*100):null;
+  const tCls=pct===null?'flat':Math.abs(pct)<3?'flat':pct>0?'up':'down';
+  const tIco=pct===null||Math.abs(pct)<3?'':(pct>0?svgIcon('arrow-up','sm'):svgIcon('arrow-down','sm'));
+  const tTxt=pct===null?'kıyas yok':Math.abs(pct)<3?'sabit':'%'+Math.abs(pct);
+
+  const byCat={};items.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amount);
+  const cats=Object.entries(byCat).map(([id,v])=>({c:catById(id),v})).sort((a,b)=>b.v-a.v);
+
+  const cash=sum(items.filter(e=>e.paymentMethod==='cash'));
+  const card=total-cash;
+  const bigTx=[...items].sort((a,b)=>b.amount-a.amount).slice(0,5);
+
+  body.innerHTML=`
+    ${weekCompareHTML()}
+
+    <div class="sec"><h2>${esc(r.name)}</h2><span class="hint">${days} gün</span></div>
+    <div class="kpis">
+      <div class="kpi"><span class="k">Toplam harcama</span><span class="v num">${moneyC(total)}</span></div>
+      <div class="kpi"><span class="k">Geçen döneme göre</span><span class="v sm"><span class="trend ${tCls}">${tIco}${tTxt}</span></span></div>
+      <div class="kpi"><span class="k">Günlük ortalama</span><span class="v num">${moneyC(total/days)}</span></div>
+      <div class="kpi"><span class="k">En yüksek gün</span><span class="v sm num">${top?moneyC(top[1]):'—'}</span>
+        <span class="k" style="margin-top:2px">${top?dayLabel(top[0]):'kayıt yok'}</span></div>
+    </div>
+
+    <div class="sec"><h2>Kategori dağılımı</h2></div>
+    <div class="card">
+      ${cats.length?`<div class="chartbox"><canvas id="chDonut"></canvas></div>
+      <div class="legend">${cats.map(x=>`
+        <div class="lg"><span class="sw" style="background:${x.c.color}"></span>
+          <span class="nm">${esc(x.c.name)}</span>
+          <span class="v">${money(x.v)}</span>
+          <span class="p">%${Math.round(x.v/total*100)}</span></div>`).join('')}</div>`
+      :'<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta gider yok.</p>'}
+    </div>
+
+    <div class="sec"><h2>Gelir / gider</h2><span class="hint">son 6 ay</span></div>
+    <div class="card"><div class="chartbox"><canvas id="chBars"></canvas></div></div>
+
+    <div class="sec"><h2>Kümülatif seyir</h2><span class="hint">geçen dönem kesikli</span></div>
+    <div class="card"><div class="chartbox tall"><canvas id="chCum"></canvas></div></div>
+
+    <div class="sec"><h2>Kart / nakit</h2></div>
+    <div class="card">
+      ${total?`<div class="chartbox short"><canvas id="chPay"></canvas></div>
+      <div class="legend">
+        <div class="lg"><span class="sw" style="background:${TOK('--accent')}"></span><span class="nm">Kart</span><span class="v">${money(card)}</span><span class="p">%${Math.round(card/total*100)}</span></div>
+        <div class="lg"><span class="sw" style="background:${TOK('--success')}"></span><span class="nm">Nakit</span><span class="v">${money(cash)}</span><span class="p">%${Math.round(cash/total*100)}</span></div>
+      </div>`:'<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta ödeme yok.</p>'}
+    </div>
+
+    <div class="sec"><h2>En çok harcanan 5 kategori</h2></div>
+    ${cats.length?`<div class="card">${cats.slice(0,5).map(x=>`
+      <div class="crow">
+        <span class="cdot" style="background:${x.c.color}1A;color:${x.c.color}">${svgIcon(x.c.icon)}</span>
+        <span><span class="nm">${esc(x.c.name)}</span>
+          <span class="track"><span class="fill" style="width:${x.v/cats[0].v*100}%;background:${x.c.color}"></span></span></span>
+        <span><span class="amt num">${money(x.v)}</span><span class="pct num">%${Math.round(x.v/total*100)}</span></span>
+      </div>`).join('')}</div>`:emptyState('bar','Veri yok','Bu aralıkta gider kaydı bulunmuyor.')}
+
+    <div class="sec"><h2>En büyük 5 işlem</h2></div>
+    ${bigTx.length?`<div class="card">${bigTx.map(e=>{
+      const c=catById(e.cat);
+      return `<div class="crow" style="grid-template-columns:36px 1fr auto">
+        <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+        <span><span class="nm">${esc(e.note||c.name)}</span>
+          <span class="pct" style="text-align:left">${dayLabel(e.ts.slice(0,10))} · ${e.paymentMethod==='cash'?'Nakit':'Kart'}</span></span>
+        <span class="amt num">${money(e.amount)}</span>
+      </div>`;}).join('')}</div>`:emptyState('bar','Veri yok','Bu aralıkta işlem bulunmuyor.')}
+  `;
+  hydrateIcons(body);
+
+  /* --- donut --- */
+  if(cats.length) mk('chDonut',{
+    type:'doughnut',
+    data:{labels:cats.map(x=>x.c.name),datasets:[{
+      data:cats.map(x=>x.v),backgroundColor:cats.map(x=>x.c.color),
+      borderWidth:2,borderColor:TOK('--surface'),hoverOffset:6
+    }]},
+    options:{cutout:'62%',plugins:{tooltip:{callbacks:{label:c=>' '+c.label+': '+money(c.parsed)}}}}
+  });
+
+  /* --- aylik gelir/gider --- */
+  const now=new Date(),ml=[],inc=[],exp=[];
+  for(let i=5;i>=0;i--){
+    const s=new Date(now.getFullYear(),now.getMonth()-i,1),e=new Date(now.getFullYear(),now.getMonth()-i+1,1);
+    const t=txIn(s,e);
+    ml.push(AYK[s.getMonth()]);
+    inc.push(sum(t.filter(x=>!isExp(x))));
+    exp.push(sum(t.filter(isExp)));
+  }
+  mk('chBars',{
+    type:'bar',
+    data:{labels:ml,datasets:[
+      {label:'Gelir',data:inc,backgroundColor:TOK('--success'),borderRadius:6,maxBarThickness:22},
+      {label:'Gider',data:exp,backgroundColor:TOK('--accent'),borderRadius:6,maxBarThickness:22}
+    ]},
+    options:{plugins:{legend:{display:true,labels:{color:TOK('--text-muted'),font:CH_FONT,boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}},
+      scales:{x:axis({grid:{display:false}}),y:axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}})}}
+  });
+
+  /* --- kumulatif: bu donem vs gecen donem --- */
+  const cum=(a,b,n)=>{
+    const out=[];let acc=0;
+    for(let i=0;i<n;i++){
+      const d=new Date(a);d.setDate(d.getDate()+i);
+      if(d>b){out.push(null);continue;}
+      const nx=new Date(d);nx.setDate(nx.getDate()+1);
+      acc+=sum(expIn(d,nx));out.push(acc);
+    }
+    return out;
+  };
+  const n=Math.min(Math.max(days,2),92);
+  mk('chCum',{
+    type:'line',
+    data:{labels:Array.from({length:n},(_,i)=>i+1+'. gün'),datasets:[
+      {label:'Bu dönem',data:cum(r.s,r.e,n),borderColor:TOK('--accent'),borderWidth:2.5,pointRadius:0,pointHoverRadius:4,tension:.25,spanGaps:false},
+      {label:'Geçen dönem',data:cum(pr.s,pr.e,n),borderColor:TOK('--text-muted'),borderWidth:1.5,borderDash:[5,4],pointRadius:0,pointHoverRadius:4,tension:.25}
+    ]},
+    options:{plugins:{legend:{display:true,labels:{color:TOK('--text-muted'),font:CH_FONT,boxWidth:14,boxHeight:2}}},
+      scales:{x:axis({grid:{display:false},ticks:{color:TOK('--text-muted'),font:CH_FONT,maxTicksLimit:7}}),
+              y:axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}})}}
+  });
+
+  /* --- kart / nakit --- */
+  if(total) mk('chPay',{
+    type:'bar',
+    data:{labels:[''],datasets:[
+      {label:'Kart',data:[card],backgroundColor:TOK('--accent'),borderRadius:6},
+      {label:'Nakit',data:[cash],backgroundColor:TOK('--success'),borderRadius:6}
+    ]},
+    options:{indexAxis:'y',scales:{
+      x:Object.assign(axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}}),{stacked:true}),
+      y:Object.assign(axis({grid:{display:false}}),{stacked:true})
+    },plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+money(c.parsed.x)}}}}
+  });
+}
+
+/* --------- bu hafta / gecen hafta karti (14 gunluk veri esigi) --------- */
+function weekCompareHTML(){
+  const span=dataSpanDays(),need=14;
+  if(span<need){
+    return `<div class="sec"><h2>Bu hafta / geçen hafta</h2></div>
+      <div class="card">
+        <div style="font-size:var(--t-sm);font-weight:600;margin-bottom:var(--s2)">${need-span} gün sonra açılıyor</div>
+        <div class="track"><div class="fill" style="width:${span/need*100}%;background:var(--accent)"></div></div>
+        <div class="wsub">Karşılaştırmanın anlamlı olması için iki haftalık veri gerekiyor.</div>
+      </div>`;
+  }
+  const now=new Date(),ts=weekStart(now),ps=new Date(ts);ps.setDate(ps.getDate()-7);
+  const el=Math.floor((now-ts)/DAY)+1;
+  const pc=new Date(ps);pc.setDate(pc.getDate()+el);
+  const cur=sum(expIn(ts,now)),prevSame=sum(expIn(ps,pc)),prevFull=sum(expIn(ps,ts));
+
+  const agg=l=>{const m={};l.forEach(e=>m[e.cat]=(m[e.cat]||0)+e.amount);return m;};
+  const a=agg(expIn(ts,now)),b=agg(expIn(ps,pc));
+  const ids=[...new Set([...Object.keys(a),...Object.keys(b)])];
+  const diffs=ids.map(id=>({id,d:(a[id]||0)-(b[id]||0)})).filter(x=>x.d!==0)
+    .sort((x,y)=>Math.abs(y.d)-Math.abs(x.d)).slice(0,4);
+
+  const p=prevSame>0?Math.round((cur-prevSame)/prevSame*100):null;
+  const cls=p===null?'flat':Math.abs(p)<3?'flat':p>0?'up':'down';
+  const ico=p===null||Math.abs(p)<3?'':(p>0?svgIcon('arrow-up','sm'):svgIcon('arrow-down','sm'));
+  const txt=p===null?'yeni':Math.abs(p)<3?'sabit':'%'+Math.abs(p);
+
+  return `<div class="sec"><h2>Bu hafta / geçen hafta</h2><span class="hint">${el}. gün</span></div>
+    <div class="card">
+      <div class="wtop"><b class="num">${money(cur)}</b><span class="trend ${cls}">${ico}${txt}</span></div>
+      <div class="wsub">Geçen haftanın aynı gününe kadar ${money(prevSame)} · haftanın tamamı ${money(prevFull)}</div>
+      ${diffs.map(x=>{const c=catById(x.id),up=x.d>0;
+        return `<div class="wrow">
+          <span class="k"><span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon,'sm')}</span>${esc(c.name)}</span>
+          <span class="v" style="color:${up?'var(--danger)':'var(--success)'}">${up?'+':'−'}${money(Math.abs(x.d))}</span>
+        </div>`;}).join('')}
+    </div>`;
+}
+
+/* ===================================================================
+   ETKILESIM
+   =================================================================== */
+$$('#nav button').forEach(b=>b.onclick=()=>{
+  ui.tab=b.dataset.tab;
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.screen').forEach(s=>s.classList.remove('on'));
+  $('#s-'+ui.tab).classList.add('on');
+  window.scrollTo({top:0});
+  drawBar();
+  if(ui.tab==='stat')drawStat();
+  if(ui.tab==='ozet')drawOzet();
+  hydrateIcons(document);
+});
+
+/* --- tutar alani: binlik ayrac + ondalik --- */
+$('#fAmount').addEventListener('input',e=>{
+  const raw=e.target.value.replace(/[^\d,]/g,''),[i,d]=raw.split(',');
+  e.target.value=(i?nf0.format(+i.replace(/\D/g,'')||0):'')+(d!==undefined?','+d.slice(0,2):'');
+  validate();
+});
+$$('#segType button').forEach(b=>b.onclick=()=>{ui.type=b.dataset.type;syncSegs();drawCatGrid();validate();});
+$$('#segPay button').forEach(b=>b.onclick=()=>{ui.pay=b.dataset.pay;syncSegs();});
+$$('#segRepeat button').forEach(b=>b.onclick=()=>{ui.repeat=b.dataset.rep;syncSegs();});
+$('#fCard').addEventListener('change',e=>ui.card=e.target.value);
+
+$('#btnSave').onclick=async()=>{
+  if(!validate())return;
+  const amt=parseAmt($('#fAmount').value);
+  const d=$('#fDate').value||iso(new Date());
+  const t=$('#fTime').value||'12:00';
+  const rec={
+    id:uid(),amount:amt,cat:ui.cat,ts:d+'T'+t+':00',
+    note:$('#fNote').value.trim(),
+    type:ui.type,
+    paymentMethod:ui.pay,
+    cardId:ui.pay==='card'?ui.card:'',
+    repeat:ui.repeat
+  };
+  S.expenses.push(rec);
+  await save();
+  haptic();
+  resetForm();
+  toast((ui.type==='income'?'Gelir':'Gider')+' kaydedildi · '+money(amt),'Geri al',async()=>{
+    S.expenses=S.expenses.filter(x=>x.id!==rec.id);await save();toast('Geri alındı');
+  });
+};
+
+/* --- islem silme: onay + geri al --- */
+document.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-del]');if(!b)return;
+  const rec=S.expenses.find(e=>e.id===b.dataset.del);if(!rec)return;
+  const c=catById(rec.cat);
+  const ok=await confirmDlg('İşlemi sil','"'+(rec.note||c.name)+'" · '+money(rec.amount)+' kaydı silinecek.','Sil');
+  if(!ok)return;
+  S.expenses=S.expenses.filter(e=>e.id!==rec.id);
+  await save();
+  toast('Silindi','Geri al',async()=>{S.expenses.push(rec);await save();toast('Geri alındı');});
+});
+
+/* --- butce --- */
+$$('#segPeriod button').forEach(b=>b.onclick=async()=>{S.settings.period=b.dataset.period;await save();});
+$('#fBudget').addEventListener('input',e=>{
+  const raw=e.target.value.replace(/\D/g,'');e.target.value=raw?nf0.format(+raw):'';
+});
+$('#fBudget').addEventListener('change',async e=>{S.settings.budget=parseAmt(e.target.value);await save();});
+
+/* --- kategori duzenleme --- */
+function catSheet(cat){
+  ui.editCat=cat;
+  ui.catIcon=cat?cat.icon:'tag';
+  ui.catColor=cat?cat.color:COLORS[0];
+  const kind=cat?(cat.kind||'expense'):'expense';
+  openSheet(`
+    <h3>${cat?'Kategoriyi düzenle':'Yeni kategori'}</h3>
+    <div class="field">
+      <label class="lbl" for="csName">Ad</label>
+      <input class="inp" id="csName" maxlength="18" value="${cat?esc(cat.name):''}" placeholder="Kategori adı">
+    </div>
+    <div class="field">
+      <span class="lbl">Tür</span>
+      <div class="seg" style="grid-template-columns:1fr 1fr" id="csKind">
+        <button data-kind="expense" class="${kind==='expense'?'on':''}">Gider</button>
+        <button data-kind="income" class="${kind==='income'?'on':''}">Gelir</button>
+      </div>
+    </div>
+    <div class="field"><span class="lbl">İkon</span><div class="icgrid" id="csIcons"></div></div>
+    <div class="field"><span class="lbl">Renk</span><div class="swatches" id="csColors"></div></div>
+    <button class="btn" id="csSave">Kaydet</button>
+    ${cat?'<button class="btn dang" id="csDel" style="margin-top:var(--s2)">Kategoriyi sil</button>':''}
+  `);
+  let k=kind;
+  $$('#csKind button').forEach(b=>b.onclick=()=>{k=b.dataset.kind;$$('#csKind button').forEach(x=>x.classList.toggle('on',x===b));});
+  const paintIcons=()=>{
+    $('#csIcons').innerHTML=CAT_ICONS.map(n=>`<button class="ic-btn ${n===ui.catIcon?'on':''}" data-i="${n}">${svgIcon(n)}</button>`).join('');
+    $$('#csIcons [data-i]').forEach(b=>b.onclick=()=>{ui.catIcon=b.dataset.i;paintIcons();});
+  };
+  const paintColors=()=>{
+    $('#csColors').innerHTML=COLORS.map(c=>`<button class="sw-btn ${c===ui.catColor?'on':''}" data-c="${c}"><i style="background:${c}"></i></button>`).join('');
+    $$('#csColors [data-c]').forEach(b=>b.onclick=()=>{ui.catColor=b.dataset.c;paintColors();});
+  };
+  paintIcons();paintColors();
+
+  $('#csSave').onclick=async()=>{
+    const name=$('#csName').value.trim();
+    if(!name){toast('Kategori adı gerekiyor');return;}
+    if(cat)Object.assign(cat,{name,icon:ui.catIcon,color:ui.catColor,kind:k});
+    else S.categories.push({id:uid(),name,icon:ui.catIcon,color:ui.catColor,kind:k});
+    await save();closeSheet();
+  };
+  if(cat)$('#csDel').onclick=async()=>{
+    const used=S.expenses.filter(e=>e.cat===cat.id).length;
+    const ok=await confirmDlg('Kategoriyi sil',
+      used?used+' işlem bu kategoride. İşlemler silinmez, "Silinmiş" olarak görünür.':'Bu kategori kaldırılacak.','Sil');
+    if(!ok)return;
+    S.categories=S.categories.filter(c=>c.id!==cat.id);
+    await save();closeSheet();toast('Kategori silindi');
+  };
+}
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-editcat]');
+  if(b)catSheet(S.categories.find(c=>c.id===b.dataset.editcat));
+});
+$('#btnAddCat').onclick=()=>catSheet(null);
+$('#scrim').onclick=closeSheet;
+
+/* --- kartlar --- */
+$('#btnAddCard').onclick=()=>{
+  openSheet(`<h3>Kart ekle</h3>
+    <div class="field"><label class="lbl" for="cdName">Kart adı</label>
+    <input class="inp" id="cdName" maxlength="20" placeholder="Örn. Bankkart"></div>
+    <button class="btn" id="cdSave">Kaydet</button>`);
+  $('#cdSave').onclick=async()=>{
+    const n=$('#cdName').value.trim();
+    if(!n){toast('Kart adı gerekiyor');return;}
+    S.settings.cards.push({id:uid(),name:n});
+    await save();closeSheet();
+  };
+};
+document.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-delcard]');if(!b)return;
+  const c=cardById(b.dataset.delcard);if(!c)return;
+  const ok=await confirmDlg('Kartı sil',c.name+' kaldırılacak. İşlemler silinmez.','Sil');
+  if(!ok)return;
+  S.settings.cards=S.settings.cards.filter(x=>x.id!==c.id);
+  S.expenses.forEach(e=>{if(e.cardId===c.id)e.cardId='';});
+  await save();
+});
+
+/* --- istatistik aralik --- */
+$$('#segRange button').forEach(b=>b.onclick=()=>{
+  ui.range=b.dataset.range;
+  $$('#segRange button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#customRange').style.display=ui.range==='custom'?'':'none';
+  drawStat();
+});
+$('#rFrom').addEventListener('change',e=>{ui.from=e.target.value;drawStat();});
+$('#rTo').addEventListener('change',e=>{ui.to=e.target.value;drawStat();});
+
+/* --- veri --- */
+$('#btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='kese-'+iso(new Date())+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('#btnReset').onclick=async()=>{
+  const ok=await confirmDlg('Tüm verileri sil','İşlemler, kategoriler ve ayarlar silinecek. Bu işlem geri alınamaz.','Hepsini sil');
+  if(!ok)return;
+  S=JSON.parse(JSON.stringify(DEFAULTS));
+  await save();toast('Sıfırlandı');
+};
+
+/* ===================================================================
+   BASLAT
+   =================================================================== */
+(async function init(){
+  const saved=await Store.get();
+  S=saved?Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),saved):JSON.parse(JSON.stringify(DEFAULTS));
+  if(!S.settings)S.settings={...DEFAULTS.settings};
+  if(!Array.isArray(S.expenses))S.expenses=[];
+  if(!S.categories?.length){S.categories=JSON.parse(JSON.stringify(DEFAULTS.categories));S.settings.catSeed=3;}
+  migrate();
+  await Store.set(S);
+
+  hydrateIcons(document);
+  resetForm();
+  const n=new Date();
+  $('#rFrom').value=iso(new Date(n.getFullYear(),n.getMonth(),1));
+  $('#rTo').value=iso(n);
+  ui.from=$('#rFrom').value;ui.to=$('#rTo').value;
+
+  $('#boot').remove();
+  $('#app').hidden=false;
+  render();
+
+  /* Chart.js gec yuklenirse ozet grafigini tazele */
+  if(!chartReady()){
+    const t=setInterval(()=>{if(chartReady()){clearInterval(t);render();}},250);
+    setTimeout(()=>clearInterval(t),8000);
+  }
+
+  /* PWA: yalnizca gercek origin'de */
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
