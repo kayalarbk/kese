@@ -1,5 +1,5 @@
 /* Kese service worker — v2 (lacivert tema, Chart.js önbelleği) */
-const CACHE = 'kese-v2';
+const CACHE = 'kese-v3';
 const SHELL = [
   './',
   './index.html',

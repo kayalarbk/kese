@@ -2,10 +2,14 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0B1B3A">
+<meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kese">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
 <title>Kese</title>
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +26,7 @@
   --navy-600:#24406F;
   --accent:#3B6FD4;
   --accent-soft:#E8EFFB;
+  --accent-bar:#A9C3EE;   /* grafik cubuklari: acik ama gorunur */
   --bg:#F6F8FC;
   --surface:#FFFFFF;
   --border:#E3E8F1;
@@ -30,6 +35,8 @@
   --success:#1F9D74;
   --danger:#D64545;
   --warning:#E0A030;
+  --gold:#C9971C;
+  --gold-soft:#FBF1D8;
 
   --shadow:0 2px 8px rgba(11,27,58,.06);
   --shadow-lg:0 8px 24px rgba(11,27,58,.12);
@@ -52,18 +59,41 @@
   --nav-h:60px;
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  /* yatay guvenli ic bosluk: Dynamic Island yan yerlesimi ve kavisli kose */
+  --pad-l:calc(var(--s4) + var(--safe-l));
+  --pad-r:calc(var(--s4) + var(--safe-r));
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
+
+/* ---- iOS: istenmeyen zoom davranislarini kapat ----
+   1) touch-action:manipulation  -> cift dokunusla yakinlastirmayi keser
+   2) text-size-adjust:100%      -> Safari'nin otomatik yazi buyutmesini keser
+   3) input font-size >= 16px    -> alana odaklaninca sayfanin zoom yapmasini keser
+   4) overscroll-behavior:none   -> lastik gibi asagi/yukari cekilmeyi keser
+   Pinch-zoom ayrica JS tarafinda gesturestart ile engelleniyor. */
+html{
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;
+  overscroll-behavior:none;
+  height:-webkit-fill-available;
+}
+html,body{margin:0;padding:0;touch-action:manipulation}
 body{
   background:var(--bg);color:var(--text);
   font-family:var(--font);font-size:var(--t-sm);line-height:1.45;
   -webkit-font-smoothing:antialiased;
   padding-bottom:calc(var(--nav-h) + var(--safe-b));
-  overscroll-behavior-y:none;
+  overscroll-behavior:none;
+  min-height:100svh;
+  /* metin secimi yalnizca girdi alanlarinda; uzun basinca cikan buyutec kapali */
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
 }
+input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
 button,input,select,textarea{font:inherit;color:inherit;margin:0}
+/* 16px altindaki her girdi iOS'ta odaklaninca sayfayi yakinlastirir */
+input,select,textarea{font-size:16px}
 button{background:none;border:0;cursor:pointer;text-align:left}
 .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -72,8 +102,10 @@ button{background:none;border:0;cursor:pointer;text-align:left}
 .appbar{
   position:sticky;top:0;z-index:30;
   background:var(--navy-900);color:#fff;
-  padding:calc(var(--safe-t) + var(--s4)) var(--s4) var(--s4);
+  /* ust dolgu = Dynamic Island / centik yuksekligi + 16px */
+  padding:calc(var(--safe-t) + var(--s4)) var(--pad-r) var(--s4) var(--pad-l);
   display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  min-height:calc(var(--safe-t) + 56px);
 }
 .appbar h1{font-size:var(--t-md);font-weight:700;margin:0;letter-spacing:.02em}
 .appbar .sub{font-size:var(--t-xs);color:#A9BBDC;margin-top:2px}
@@ -83,7 +115,7 @@ button{background:none;border:0;cursor:pointer;text-align:left}
   padding:var(--s1) var(--s3);white-space:nowrap;
 }
 
-main{padding:var(--s4);max-width:560px;margin:0 auto}
+main{padding:var(--s4) var(--pad-r) var(--s4) var(--pad-l);max-width:560px;margin:0 auto}
 .screen{display:none}
 .screen.on{display:block;animation:fade .18s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -179,21 +211,79 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .crow .amt{font-size:var(--t-sm);font-weight:700;text-align:right}
 .crow .pct{font-size:var(--t-xs);color:var(--text-muted);text-align:right}
 
-/* ===================== ISLEM LISTESI ===================== */
-.daygroup{margin-bottom:var(--s4)}
-.dayhead{display:flex;justify-content:space-between;padding:0 var(--s1) var(--s2);font-size:var(--t-xs);font-weight:600;color:var(--text-muted)}
+/* ===================== GUNLUK DOSYALAR ===================== */
+/* Islemler artik gun gun "dosya" olarak duruyor. Dosyaya dokununca
+   o gunun islemleri alt panelde aciliyor. */
+.dayfile{
+  display:grid;grid-template-columns:44px 1fr auto 20px;align-items:center;gap:var(--s3);
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-card);box-shadow:var(--shadow);
+  padding:var(--s3);margin-bottom:var(--s2);
+  transition:border-color .15s,transform .1s;
+}
+.dayfile:active{transform:scale(.995);border-color:var(--accent)}
+.dayfile .dnum{
+  width:44px;height:44px;border-radius:10px;background:var(--fill-quiet);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  line-height:1;flex:none;
+}
+.dayfile .dnum b{font-size:var(--t-md);font-weight:700}
+.dayfile .dnum span{font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px}
+.dayfile.today .dnum{background:var(--navy-900);color:#fff}
+.dayfile.today .dnum span{color:#A9BBDC}
+.dayfile .nm{font-size:var(--t-sm);font-weight:600}
+.dayfile .meta{font-size:var(--t-xs);color:var(--text-muted);margin-top:3px;display:flex;align-items:center;gap:var(--s1)}
+.dayfile .amt{font-size:var(--t-sm);font-weight:700;text-align:right}
+.dayfile .amt small{display:block;font-size:var(--t-xs);font-weight:600;color:var(--success);margin-top:2px}
+.dayfile .chev{color:var(--text-muted);display:grid;place-items:center}
+.dots{display:flex;gap:3px;align-items:center}
+.dots i{width:6px;height:6px;border-radius:50%;display:block}
+.dots u{font-size:10px;color:var(--text-muted);text-decoration:none;font-weight:600}
+
+/* ===================== KAYDIRARAK SILME ===================== */
+/* Satir iki katman: altta kirmizi "Sil" zemini, ustte kayan icerik.
+   Parmak yatay hareket ederse satiri kaydirir, dikey ise sayfa kayar. */
+.swipe{
+  position:relative;overflow:hidden;border-radius:var(--r-card);margin-bottom:var(--s2);
+  background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);
+}
+.swipe-bg{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--s2);padding:0 var(--s4);background:var(--danger);color:#fff;
+  font-size:var(--t-sm);font-weight:700;letter-spacing:.02em;
+}
+.swipe-bg .icon{stroke-width:2}
+/* fg'nin kendi kosesi yok; yuvarlatmayi disaridaki .swipe yapar,
+   boylece kaydirilmadigi halde kenarda kirmizi bir cizgi gorunmez */
+.swipe-fg{
+  position:relative;background:var(--surface);
+  will-change:transform;transition:transform .22s cubic-bezier(.3,1,.4,1);
+}
+.swipe.dragging .swipe-fg{transition:none}
+.swipe.gone{transition:height .2s ease,margin .2s ease,opacity .2s ease;height:0!important;margin:0;opacity:0}
+
 .tx{
-  display:grid;grid-template-columns:36px 1fr auto 44px;align-items:center;gap:var(--s3);
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);
-  box-shadow:var(--shadow);padding:var(--s3);margin-bottom:var(--s2);
-  animation:fade .18s ease;
+  display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:var(--s3);
+  padding:var(--s3);width:100%;background:var(--surface);
 }
 .tx .nm{font-size:var(--t-sm);font-weight:600}
 .tx .meta{display:flex;align-items:center;gap:var(--s1);font-size:var(--t-xs);color:var(--text-muted);margin-top:2px}
-.tx .amt{font-size:var(--t-sm);font-weight:700}
+.tx .amt{font-size:var(--t-sm);font-weight:700;text-align:right}
 .tx .amt.in{color:var(--success)}
-.txdel{width:44px;height:44px;display:grid;place-items:center;color:var(--text-muted);border-radius:var(--r-input)}
+.txdel{width:44px;height:44px;display:grid;place-items:center;color:var(--text-muted);border-radius:var(--r-input);flex:none}
 .txdel:active{color:var(--danger);background:var(--danger-soft)}
+.swipehint{font-size:var(--t-xs);color:var(--text-muted);text-align:center;padding:var(--s2) 0 var(--s3)}
+
+/* ===================== KATEGORI SECICI ===================== */
+.catpick{
+  display:flex;align-items:center;gap:var(--s3);width:100%;min-height:56px;
+  padding:var(--s2) var(--s3);background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-input);
+}
+.catpick.empty{border-style:dashed;color:var(--text-muted)}
+.catpick .nm{flex:1;font-size:var(--t-md);font-weight:600}
+.catpick .chev{color:var(--text-muted);display:grid;place-items:center}
+.pickgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-bottom:var(--s4)}
 
 .empty{text-align:center;padding:var(--s8) var(--s5);border:1px dashed var(--border);border-radius:var(--r-card);background:var(--surface)}
 .empty .cdot{margin:0 auto var(--s3);background:var(--fill-quiet);color:var(--text-muted);width:44px;height:44px}
@@ -227,7 +317,6 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .sugg .v{font-size:var(--t-xs);color:var(--text-muted);font-variant-numeric:tabular-nums}
 .sugg:active{border-color:var(--accent)}
 
-.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2)}
 .ccell{
   min-height:76px;padding:var(--s2) var(--s1);
   border:1px solid var(--border);border-radius:var(--r-card);background:var(--surface);
@@ -283,6 +372,60 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .wrow .k .cdot{width:28px;height:28px}
 .wrow .v{font-weight:700;font-variant-numeric:tabular-nums;margin-right:var(--s2)}
 
+/* --- istatistik: veri tablosu --- */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 calc(var(--s4) * -1);padding:0 var(--s4)}
+table.dt{width:100%;border-collapse:collapse;font-size:var(--t-xs);font-variant-numeric:tabular-nums}
+table.dt th{
+  text-align:right;font-weight:600;color:var(--text-muted);
+  padding:0 0 var(--s2);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+table.dt th:first-child,table.dt td:first-child{text-align:left}
+table.dt td{padding:var(--s2) 0;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+table.dt td:first-child{width:99%}
+table.dt th+th,table.dt td+td{padding-left:var(--s3)}
+table.dt tr:last-child td{border-bottom:0}
+table.dt .cn{display:flex;align-items:center;gap:var(--s2);font-weight:600;font-size:var(--t-sm)}
+table.dt .cn i{width:8px;height:8px;border-radius:2px;flex:none;display:block}
+.d-up{color:var(--danger);font-weight:700}
+.d-down{color:var(--success);font-weight:700}
+.d-flat{color:var(--text-muted)}
+
+/* --- istatistik: gun/saat profili --- */
+.prof{display:grid;gap:var(--s2)}
+.prow{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:var(--s3);font-size:var(--t-xs)}
+.prow .pk{color:var(--text-muted);font-weight:600}
+.prow .pv{font-weight:700;font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+.prow .track{height:8px}
+.prow.peak .pk,.prow.peak .pv{color:var(--navy-900)}
+
+/* --- istatistik: ozet satirlari --- */
+.statline{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--border);font-size:var(--t-sm)}
+.statline:first-child{padding-top:0}
+.statline:last-child{border-bottom:0;padding-bottom:0}
+.statline .k{color:var(--text-muted)}
+.statline .v{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.statline .v small{display:block;font-size:var(--t-xs);font-weight:500;color:var(--text-muted);margin-top:2px}
+.note{font-size:var(--t-xs);color:var(--text-muted);margin:var(--s3) var(--s1) 0;line-height:1.5}
+
+/* --- geri donusum kutusu --- */
+.trashrow{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.trashrow:last-child{border-bottom:0}
+.trashrow .nm{font-size:var(--t-sm);font-weight:600}
+.trashrow .meta{font-size:var(--t-xs);color:var(--text-muted);margin-top:2px}
+.trashrow .acts{display:flex;gap:var(--s2);align-items:center}
+.mini{
+  min-height:36px;padding:0 var(--s3);border-radius:var(--r-pill);
+  border:1px solid var(--border);font-size:var(--t-xs);font-weight:700;
+  display:flex;align-items:center;gap:var(--s1);background:var(--surface);
+}
+.mini.dang{color:var(--danger);border-color:#F1C9C9}
+.mini.ok{color:var(--accent);border-color:var(--accent)}
+.badge{
+  min-width:20px;height:20px;padding:0 6px;border-radius:var(--r-pill);
+  background:var(--danger);color:#fff;font-size:11px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+
 /* ===================== AYARLAR ===================== */
 .list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden}
 .li{
@@ -302,14 +445,17 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .ic-btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 
 /* ===================== ALT MENU ===================== */
+/* Alt menu: ic yuksekligi hep 60px kalir, ana ekran cizgisi (home indicator)
+   alani asagida ayri dolgu olarak durur; hicbir dugme cizginin uzerine gelmez. */
 .nav{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
-  height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);
+  height:calc(var(--nav-h) + var(--safe-b));
+  padding:0 var(--safe-r) var(--safe-b) var(--safe-l);
   background:var(--navy-900);display:grid;grid-template-columns:repeat(4,1fr);
 }
 .nav button{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  color:#7E93BC;font-size:11px;font-weight:600;min-height:44px;
+  color:#7E93BC;font-size:11px;font-weight:600;height:var(--nav-h);
 }
 .nav button.on{color:#fff}
 .nav button.on .icon{stroke-width:2}
@@ -320,16 +466,18 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .sheet{
   position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:560px;margin:0 auto;
   background:var(--surface);border-radius:16px 16px 0 0;
-  padding:var(--s3) var(--s4) calc(var(--s5) + var(--safe-b));
+  padding:var(--s3) var(--pad-r) calc(var(--s5) + var(--safe-b)) var(--pad-l);
   transform:translateY(101%);transition:transform .24s cubic-bezier(.3,1,.4,1);
-  max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);
+  max-height:min(88svh,calc(100svh - var(--safe-t) - var(--s5)));
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  box-shadow:var(--shadow-lg);
 }
 .sheet.on{transform:none}
 .grab{width:36px;height:4px;border-radius:var(--r-pill);background:var(--border);margin:0 auto var(--s4)}
 .sheet h3{font-size:var(--t-md);font-weight:700;margin:0 0 var(--s4)}
 
 .dialog{
-  position:fixed;left:var(--s4);right:var(--s4);top:50%;transform:translateY(-46%) scale(.97);
+  position:fixed;left:var(--pad-l);right:var(--pad-r);top:50%;transform:translateY(-46%) scale(.97);
   max-width:340px;margin:0 auto;z-index:52;
   background:var(--surface);border-radius:var(--r-card);padding:var(--s5);
   box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.18s;
@@ -339,7 +487,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 .dialog p{margin:0 0 var(--s5);font-size:var(--t-sm);color:var(--text-muted)}
 
 .toast{
-  position:fixed;left:var(--s4);right:var(--s4);bottom:calc(var(--nav-h) + var(--safe-b) + var(--s4));
+  position:fixed;left:var(--pad-l);right:var(--pad-r);bottom:calc(var(--nav-h) + var(--safe-b) + var(--s4));
   max-width:520px;margin:0 auto;z-index:60;
   background:var(--navy-900);color:#fff;border-radius:10px;
   padding:var(--s3) var(--s4);font-size:var(--t-sm);font-weight:500;
@@ -355,6 +503,62 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 @keyframes shimmer{to{background-position:-200% 0}}
 #boot{padding:var(--s4);max-width:560px;margin:0 auto}
 
+/* ===================== GIRIS ANIMASYONU ===================== */
+/* KE lacivert, SE altin sarisi. Harfler sirayla yukari kayarak gelir,
+   altlarindaki cizgi iki rengi birlestirerek acilir. */
+#splash{
+  position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:var(--s3);padding:var(--safe-t) var(--pad-r) var(--safe-b) var(--pad-l);
+  transition:opacity .45s ease,visibility .45s ease;
+}
+#splash.gone{opacity:0;visibility:hidden;pointer-events:none}
+.sp-logo{display:flex;font-size:clamp(48px,16vw,68px);font-weight:700;letter-spacing:.05em;line-height:1}
+.sp-logo span{opacity:0;transform:translateY(16px) scale(.94);animation:sp-pop .58s cubic-bezier(.2,.9,.3,1.25) forwards}
+.sp-logo .l1{color:var(--navy-900)}
+.sp-logo .l2{color:var(--gold);animation-delay:.15s}
+.sp-rule{width:0;height:4px;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--navy-900),var(--gold));animation:sp-rule .6s .36s cubic-bezier(.3,1,.4,1) forwards}
+.sp-sub{
+  font-size:var(--t-xs);font-weight:600;color:var(--text-muted);
+  letter-spacing:.18em;text-transform:uppercase;
+  opacity:0;animation:sp-fade .5s .62s ease forwards;
+}
+@keyframes sp-pop{to{opacity:1;transform:none}}
+@keyframes sp-rule{to{width:132px}}
+@keyframes sp-fade{to{opacity:1}}
+
+/* ===================== KARSILAMA ===================== */
+#onb{
+  position:fixed;inset:0;z-index:90;background:var(--bg);overflow-y:auto;
+  padding:calc(var(--safe-t) + var(--s6)) var(--pad-r) calc(var(--safe-b) + var(--s6)) var(--pad-l);
+}
+.onb-in{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.onb-prog{height:4px;border-radius:var(--r-pill);background:var(--fill-quiet);overflow:hidden;margin-bottom:var(--s8)}
+.onb-prog i{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--navy-900),var(--gold));transition:width .35s ease}
+.onb-step{flex:1;display:flex;flex-direction:column;animation:fade .25s ease}
+.onb-step h2{font-size:var(--t-xl);font-weight:700;margin:0 0 var(--s2);line-height:1.2}
+.onb-step p.lead{font-size:var(--t-sm);color:var(--text-muted);margin:0 0 var(--s6);line-height:1.55}
+.onb-actions{margin-top:auto;padding-top:var(--s6);display:flex;flex-direction:column;gap:var(--s2)}
+.opt{
+  display:flex;align-items:flex-start;gap:var(--s3);width:100%;text-align:left;
+  padding:var(--s4);margin-bottom:var(--s2);
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);
+  transition:border-color .15s,background .15s;
+}
+.opt .cdot{background:var(--fill-quiet);color:var(--text-muted);margin-top:1px}
+.opt b{display:block;font-size:var(--t-md);font-weight:600;margin-bottom:2px}
+.opt span.d{display:block;font-size:var(--t-xs);color:var(--text-muted);line-height:1.5}
+.opt.on{border-color:var(--navy-900);background:var(--surface)}
+.opt.on .cdot{background:var(--navy-900);color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{
+  min-height:44px;padding:0 var(--s4);border-radius:var(--r-pill);
+  background:var(--surface);border:1.5px solid var(--border);
+  font-size:var(--t-sm);font-weight:600;display:flex;align-items:center;gap:var(--s2);
+}
+.chip.on{border-color:var(--navy-900);background:var(--navy-900);color:#fff}
+.gold{color:var(--gold)}
+
 @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 </style>
 </head>
@@ -365,6 +569,17 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
   <div><h1 id="barTitle">Kese</h1><div class="sub" id="barSub">Harcama defteri</div></div>
   <div class="pill" id="barPill">—</div>
 </header>
+
+<div id="splash">
+  <div class="sp-logo"><span class="l1">KE</span><span class="l2">SE</span></div>
+  <div class="sp-rule"></div>
+  <div class="sp-sub">Harcama Defteri</div>
+</div>
+
+<div id="onb" hidden><div class="onb-in">
+  <div class="onb-prog"><i id="onbBar" style="width:0%"></i></div>
+  <div class="onb-step" id="onbBody"></div>
+</div></div>
 
 <div id="boot">
   <div class="sk" style="height:250px"></div>
@@ -391,11 +606,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
       <div class="pacebar"><span class="dot" id="paceDot"></span><span id="paceText">—</span></div>
     </div>
 
-    <div class="tiles">
-      <div class="tile"><b class="num pos" id="tIncome">—</b><span>Gelir</span></div>
-      <div class="tile"><b class="num neg" id="tExpense">—</b><span>Gider</span></div>
-      <div class="tile"><b class="num" id="tNet">—</b><span>Net</span></div>
-    </div>
+    <div class="tiles" id="tiles"></div>
 
     <div class="sec"><h2>Bu ayın seyri</h2><span class="hint" id="trendHint"></span></div>
     <div class="card"><div class="chartbox short"><canvas id="chTrend"></canvas></div></div>
@@ -403,7 +614,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
     <div class="sec"><h2>Kategoriler</h2><span class="hint" id="catHint"></span></div>
     <div id="catBreak"></div>
 
-    <div class="sec"><h2>Son işlemler</h2></div>
+    <div class="sec"><h2>Son günler</h2><span class="hint">dosyaya dokun</span></div>
     <div id="recent"></div>
   </section>
 
@@ -420,7 +631,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
     <div class="suggrow" id="suggRow"></div>
 
     <div class="card">
-      <div class="field">
+      <div class="field" id="typeField">
         <span class="lbl">İşlem türü</span>
         <div class="seg" style="grid-template-columns:1fr 1fr" id="segType">
           <button data-type="expense" class="on">Gider</button>
@@ -430,7 +641,11 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 
       <div class="field">
         <span class="lbl">Kategori</span>
-        <div class="cgrid" id="catGrid"></div>
+        <button class="catpick empty" id="catPick" type="button" aria-haspopup="dialog">
+          <span class="cdot" id="catPickDot"></span>
+          <span class="nm" id="catPickName">Kategori seç</span>
+          <span class="chev" data-ic="chevron"></span>
+        </button>
       </div>
 
       <div class="field">
@@ -479,7 +694,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
       <button class="btn" id="btnSave" disabled>Kaydet</button>
     </div>
 
-    <div class="sec"><h2>İşlemler</h2><span class="hint" id="txCount"></span></div>
+    <div class="sec"><h2>Günlük dosyalar</h2><span class="hint" id="txCount"></span></div>
     <div id="txList"></div>
   </section>
 
@@ -503,7 +718,23 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
 
   <!-- ================= AYARLAR ================= -->
   <section class="screen" id="s-ayar">
-    <div class="sec"><h2>Bütçe</h2></div>
+    <div class="sec"><h2>Kullanım</h2></div>
+    <div class="list">
+      <button class="li" id="liMode">
+        <span class="cdot" style="background:var(--accent-soft);color:var(--accent)" data-ic="settings"></span>
+        <span class="nm">Ne kaydediyorsun</span>
+        <span class="val" id="modeVal">—</span>
+        <span data-ic="chevron" data-cls="sm"></span>
+      </button>
+      <button class="li" id="liProfile">
+        <span class="cdot" style="background:var(--gold-soft);color:var(--gold)" data-ic="tag"></span>
+        <span class="nm">Profil ve amaç</span>
+        <span class="val" id="profVal">—</span>
+        <span data-ic="chevron" data-cls="sm"></span>
+      </button>
+    </div>
+
+    <div class="sec"><h2>Bütçe</h2><span class="hint" id="budHint"></span></div>
     <div class="card">
       <div class="field">
         <span class="lbl">Dönem</span>
@@ -512,10 +743,7 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
           <button data-period="monthly">Aylık</button>
         </div>
       </div>
-      <div class="field">
-        <label class="lbl" for="fBudget">Bütçe tutarı</label>
-        <input class="inp num" id="fBudget" type="text" inputmode="numeric" placeholder="0">
-      </div>
+      <div id="budgetBody"></div>
     </div>
 
     <div class="sec"><h2>Kategoriler</h2><span class="hint">düzenlemek için dokun</span></div>
@@ -526,11 +754,15 @@ select.inp{appearance:none;background-image:none;padding-right:var(--s8)}
     <div class="list" id="cardSettings"></div>
     <button class="btn sec" id="btnAddCard" style="margin-top:var(--s3)">Kart ekle</button>
 
+    <div class="sec"><h2>Geri dönüşüm kutusu</h2><span class="hint">24 saat saklanır</span></div>
+    <div class="list" id="trashBox"></div>
+
     <div class="sec"><h2>Veri</h2></div>
     <button class="btn sec" id="btnExport" style="margin-bottom:var(--s2)">Yedeği indir</button>
+    <button class="btn sec" id="btnCsv" style="margin-bottom:var(--s2)">İşlemleri CSV olarak indir</button>
     <button class="btn dang" id="btnReset">Tüm verileri sil</button>
     <p style="text-align:center;color:var(--text-muted);font-size:var(--t-xs);margin-top:var(--s4)">
-      Veriler yalnızca bu cihazda saklanır. Sürüm 2.0
+      Veriler yalnızca bu cihazda saklanır. Sürüm 3.0
     </p>
   </section>
 </main>
@@ -596,7 +828,14 @@ const ICONS = {
   'settings':'<circle cx="12" cy="12" r="3"/><path d="M19.2 14.8a1.5 1.5 0 0 0 .3 1.7l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.5 1.5 0 0 0-2.6 1.1v.2a2 2 0 1 1-4 0v-.1a1.5 1.5 0 0 0-2.6-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.5 1.5 0 0 0-1.1-2.6h-.2a2 2 0 1 1 0-4h.1a1.5 1.5 0 0 0 1.1-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.5 1.5 0 0 0 2.6-1.1v-.2a2 2 0 1 1 4 0v.1a1.5 1.5 0 0 0 2.6 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.5 1.5 0 0 0 1.1 2.6h.2a2 2 0 1 1 0 4h-.1a1.5 1.5 0 0 0-1.4.9z"/>',
   'edit':'<path d="M4 20h4.5L20 8.5 15.5 4 4 15.5zM14 5.5 18.5 10"/>',
   'inbox':'<path d="M3 12h5l1.5 3h5L16 12h5"/><path d="M5.5 4h13l2.5 8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z"/>',
-  'tag':'<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.3"/>'
+  'tag':'<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.3"/>',
+  'undo':'<path d="M3 8h11a6 6 0 0 1 0 12H9"/><path d="M7 4 3 8l4 4"/>',
+  'folder':'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4L11 8.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>',
+  'right':'<path d="M9.5 6l6 6-6 6"/>',
+  'clock-x':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3 1.8"/>',
+  'sigma':'<path d="M18 5H6l6 7-6 7h12"/>',
+  'target':'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/>',
+  'download':'<path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 20h16"/>'
 };
 const CAT_ICONS = ['cart','coffee','droplet','cigarette','beer','utensils','bus','cookie','receipt','phone','game','shirt','pill','package','home','wallet','gift','book','card','tag'];
 
@@ -633,7 +872,16 @@ const COLORS=['#3B6FD4','#1F9D74','#D64545','#E0A030','#7A5AF8','#0E9AA7','#C255
 
 /* ---------- VARSAYILAN MODEL ---------- */
 const DEFAULTS={
-  settings:{budget:0,period:'monthly',currency:'₺',catSeed:3,cards:[]},
+  settings:{
+    budget:0,period:'monthly',currency:'₺',catSeed:3,cards:[],
+    /* karsilama akisindan gelenler */
+    onboarded:false,
+    name:'',
+    goals:[],
+    mode:'both',            /* 'expense' | 'income' | 'both' */
+    budgetMode:'manual',    /* 'manual' | 'income'  */
+    spendRatio:80           /* gelirin harcanabilir yuzdesi (budgetMode='income') */
+  },
   categories:[
     {id:'c9', name:'Sigara',    icon:'cigarette',color:'#D64545',kind:'expense'},
     {id:'c10',name:'Su',        icon:'droplet',  color:'#0E9AA7',kind:'expense'},
@@ -656,15 +904,20 @@ const DEFAULTS={
     {id:'i4', name:'Hediye',    icon:'gift',     color:'#C2557E',kind:'income'},
     {id:'i5', name:'Diğer',     icon:'package',  color:'#6B7A99',kind:'income'}
   ],
-  expenses:[]
+  expenses:[],
+  trash:[]
 };
+/* Geri donusum kutusu: silinen islem once buraya tasinir, 24 saat sonra
+   kalici olarak gider. Hesaplamalarin hicbiri trash'i okumaz. */
+const TRASH_TTL=86400000;
 /* emoji -> ikon gocu (1.x surumlerinden gelen veriler icin) */
 const EMOJI_MAP={'🛒':'cart','🍽️':'utensils','🚌':'bus','☕':'coffee','🧾':'receipt','🎮':'game','💊':'pill','📦':'package','🚬':'cigarette','💧':'droplet','🍺':'beer','🍫':'cookie','📱':'phone','👕':'shirt','🏠':'home'};
 const SEED_SUGG=['c9','c10','c4','c3'];
 
 let S=null, charts={}, ui={
   tab:'ozet', type:'expense', pay:'card', cat:null, card:'', repeat:'none',
-  range:'month', from:'', to:'', editCat:null, catIcon:'tag', catColor:COLORS[0]
+  range:'month', from:'', to:'', editCat:null, catIcon:'tag', catColor:COLORS[0],
+  openDay:null   /* alt panelde acik olan gunluk dosya (YYYY-MM-DD) */
 };
 
 /* ---------- YARDIMCILAR ---------- */
@@ -684,6 +937,10 @@ const AYK=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','
 const GUNLER=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 const GUNK=['Pzr','Pzt','Sal','Çar','Per','Cum','Cmt'];
 const catById=id=>S.categories.find(c=>c.id===id)||{id,name:'Silinmiş',icon:'tag',color:'#6B7A99',kind:'expense'};
+/* kullanim modu: kullanici neyi kaydediyor */
+const mode=()=>S.settings.mode||'both';
+const wantsIncome=()=>mode()!=='expense';
+const wantsExpense=()=>mode()!=='income';
 const cardById=id=>(S.settings.cards||[]).find(c=>c.id===id);
 const isExp=e=>(e.type||'expense')==='expense';
 const sum=a=>a.reduce((t,e)=>t+e.amount,0);
@@ -716,7 +973,10 @@ function openSheet(html){
   $('#sheetBody').innerHTML=html;hydrateIcons($('#sheetBody'));
   $('#sheet').classList.add('on');$('#scrim').classList.add('on');
 }
-function closeSheet(){$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');}
+function closeSheet(){
+  $('#sheet').classList.remove('on');$('#scrim').classList.remove('on');
+  ui.openDay=null;
+}
 
 /* ---------- DONEM MATEMATIGI ---------- */
 function weekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
@@ -731,7 +991,19 @@ function periodLabel(s,p){
 const inR=(ts,a,b)=>{const t=new Date(ts).getTime();return t>=a.getTime()&&t<b.getTime();};
 const txIn=(a,b)=>S.expenses.filter(e=>inR(e.ts,a,b));
 const expIn=(a,b)=>txIn(a,b).filter(isExp);
+/* ozet grafiginin odagi: gelir modunda gelir, digerlerinde gider */
+const focusIn=(a,b)=>txIn(a,b).filter(mode()==='income'?(e=>!isExp(e)):isExp);
 function currentPeriod(){const p=S.settings.period,s=periodStart(new Date(),p);return{start:s,end:periodEnd(s,p),p};}
+/* Butce ya elle girilir ya da donemin gelirinden turetilir.
+   'income' modunda butce = donem geliri x harcanabilir yuzde. */
+function incomeIn(a,b){return sum(txIn(a,b).filter(e=>!isExp(e)));}
+function effectiveBudget(a,b){
+  if(S.settings.budgetMode==='income'){
+    if(!a){const c=currentPeriod();a=c.start;b=c.end;}
+    return Math.round(incomeIn(a,b)*(S.settings.spendRatio||100)/100);
+  }
+  return S.settings.budget||0;
+}
 function dataSpanDays(){
   if(!S.expenses.length)return 0;
   const f=Math.min(...S.expenses.map(e=>+new Date(e.ts.slice(0,10)+'T00:00:00')));
@@ -774,7 +1046,38 @@ function migrate(){
     if(e.repeat===undefined)e.repeat='none';
   });
   if(!Array.isArray(S.settings.cards))S.settings.cards=[];
+  if(!Array.isArray(S.trash))S.trash=[];
   return touched;
+}
+
+/* ---------- GERI DONUSUM KUTUSU ---------- */
+/* Suresi dolanlari kalici siler. Kayit dondurmez, S uzerinde calisir. */
+function purgeTrash(){
+  const before=S.trash.length;
+  const now=Date.now();
+  S.trash=S.trash.filter(t=>now-new Date(t.deletedAt).getTime()<TRASH_TTL);
+  return before-S.trash.length;
+}
+function trashLeft(t){
+  const ms=TRASH_TTL-(Date.now()-new Date(t.deletedAt).getTime());
+  if(ms<=0)return 'siliniyor';
+  const h=Math.floor(ms/3600000);
+  if(h>=1)return h+' saat sonra silinir';
+  return Math.max(Math.floor(ms/60000),1)+' dk sonra silinir';
+}
+async function moveToTrash(rec){
+  S.expenses=S.expenses.filter(e=>e.id!==rec.id);
+  S.trash.unshift({...rec,deletedAt:new Date().toISOString()});
+  await save();
+}
+async function restoreFromTrash(id){
+  const i=S.trash.findIndex(t=>t.id===id);
+  if(i<0)return false;
+  const {deletedAt,...rec}=S.trash[i];
+  S.trash.splice(i,1);
+  S.expenses.push(rec);
+  await save();
+  return true;
 }
 
 /* ===================================================================
@@ -794,7 +1097,9 @@ function drawBar(){
   const titles={ozet:'Özet',ekle:'İşlem ekle',stat:'İstatistik',ayar:'Ayarlar'};
   const subs={ozet:'Harcama defteri',ekle:'Gelir veya gider kaydet',stat:'Harcama analizi',ayar:'Bütçe ve kategoriler'};
   $('#barTitle').textContent=titles[ui.tab];
-  $('#barSub').textContent=subs[ui.tab];
+  $('#barSub').textContent=(ui.tab==='ozet'&&S.settings.name)
+    ? 'Merhaba '+S.settings.name
+    : subs[ui.tab];
   $('#barPill').textContent=periodLabel(start,p);
   $('#barPill').style.display=ui.tab==='ozet'?'':'none';
 }
@@ -802,9 +1107,13 @@ function drawBar(){
 /* ------------------------- OZET ------------------------- */
 function drawOzet(){
   const {start,end}=currentPeriod();
-  const all=txIn(start,end), items=all.filter(isExp);
-  const budget=S.settings.budget, spent=sum(items);
+  const all=txIn(start,end);
+  /* Yalnizca gelir kaydeden kullanicida halka gideri degil geliri gosterir. */
+  const focusIncome=mode()==='income';
+  const items=all.filter(focusIncome?(e=>!isExp(e)):isExp);
+  const spent=sum(items);
   const income=sum(all.filter(e=>!isExp(e)));
+  const budget=focusIncome?0:effectiveBudget(start,end);
 
   const byCat={};items.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amount);
   const parts=Object.entries(byCat).map(([id,v])=>({c:catById(id),v})).sort((a,b)=>b.v-a.v);
@@ -823,8 +1132,12 @@ function drawOzet(){
   });
 
   if(budget<=0){
-    $('#ringCap').textContent='Harcanan';$('#ringBig').textContent=money(spent);
-    $('#ringBig').classList.remove('over');$('#ringSub').textContent='Bütçe belirlenmedi';
+    $('#ringCap').textContent=focusIncome?'Toplam gelir':'Harcanan';
+    $('#ringBig').textContent=money(spent);
+    $('#ringBig').classList.remove('over');
+    $('#ringSub').textContent=focusIncome
+      ? items.length+' kayıt'
+      : (S.settings.budgetMode==='income'?'Bu dönem gelir kaydı yok':'Bütçe belirlenmedi');
   }else if(over){
     $('#ringCap').textContent='Bütçe aşımı';$('#ringBig').textContent='+'+money(spent-budget);
     $('#ringBig').classList.add('over');$('#ringSub').textContent=money(spent)+' / '+money(budget);
@@ -836,7 +1149,11 @@ function drawOzet(){
   const now=new Date(),total=end-start,el=Math.min(Math.max(now-start,0),total),frac=el/total;
   $('#ringPace').setAttribute('transform','rotate('+(frac*360)+' 105 105)');
   const dot=$('#paceDot'),txt=$('#paceText');
-  if(budget<=0){dot.style.background='var(--text-muted)';txt.textContent='Tempo için bütçe gerekiyor';}
+  if(budget<=0){
+    dot.style.background='var(--text-muted)';
+    txt.textContent=focusIncome?'Gelir takibi modundasın'
+      :(S.settings.budgetMode==='income'?'Bütçe gelirlerinden hesaplanıyor':'Tempo için bütçe gerekiyor');
+  }
   else{
     const d=spent-budget*frac;
     if(Math.abs(d)<budget*.03){dot.style.background='var(--accent)';txt.textContent='Tam tempoda';}
@@ -844,11 +1161,17 @@ function drawOzet(){
     else{dot.style.background='var(--success)';txt.textContent='Tempo altında · '+money(-d)+' önde';}
   }
 
-  $('#tIncome').textContent=moneyC(income);
-  $('#tExpense').textContent=moneyC(spent);
-  const net=income-spent;
-  const nEl=$('#tNet');nEl.textContent=moneyC(net);
-  nEl.className='num '+(net>0?'pos':net<0?'neg':'');
+  /* Ozet kutulari kullanim moduna gore degisir */
+  const expTotal=sum(all.filter(isExp));
+  const net=income-expTotal;
+  const elapsedDays=Math.max(Math.ceil((Math.min(Date.now(),+end)-start)/DAY),1);
+  const tile=(v,l,cls)=>`<div class="tile"><b class="num ${cls||''}">${v}</b><span>${l}</span></div>`;
+  $('#tiles').innerHTML=
+    mode()==='expense'
+      ? tile(moneyC(expTotal),'Gider','neg')+tile(items.length,'İşlem')+tile(moneyC(expTotal/elapsedDays),'Günlük ort.')
+      : mode()==='income'
+        ? tile(moneyC(income),'Gelir','pos')+tile(items.length,'Kayıt')+tile(moneyC(income/elapsedDays),'Günlük ort.')
+        : tile(moneyC(income),'Gelir','pos')+tile(moneyC(expTotal),'Gider','neg')+tile(moneyC(net),'Net',net>0?'pos':net<0?'neg':'');
 
   $('#catHint').textContent=parts.length?parts.length+' kategori':'';
   $('#catBreak').innerHTML=parts.length
@@ -862,8 +1185,9 @@ function drawOzet(){
         </div>`).join('')+'</div>'
     : emptyState('inbox','Bu dönem boş','Ekle sekmesinden ilk işlemini kaydet.');
 
-  const last=[...S.expenses].sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,5);
-  $('#recent').innerHTML=last.length?txListHTML(last):emptyState('inbox','Kayıt yok','Kaydettiğin işlemler burada görünür.');
+  $('#recent').innerHTML=S.expenses.length
+    ? dayFilesHTML(S.expenses,4)
+    : emptyState('inbox','Kayıt yok','Kaydettiğin işlemler burada günlük dosyalar halinde toplanır.');
 
   drawTrendChart(start,end);
 }
@@ -872,44 +1196,155 @@ function emptyState(ic,title,text){
   return `<div class="empty"><span class="cdot">${svgIcon(ic)}</span><b>${esc(title)}</b><span>${esc(text)}</span></div>`;
 }
 
-/* islem listesi */
-function txListHTML(list){
-  const groups={};
-  list.forEach(e=>{const k=e.ts.slice(0,10);(groups[k]=groups[k]||[]).push(e);});
-  return Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,items])=>{
-    const net=items.reduce((t,e)=>t+(isExp(e)?e.amount:0),0);
-    return `<div class="daygroup">
-      <div class="dayhead"><span>${dayLabel(k)}</span><span class="num">${money(net)}</span></div>
-      ${items.sort((a,b)=>b.ts.localeCompare(a.ts)).map(txHTML).join('')}
-    </div>`;
-  }).join('');
-}
 function dayLabel(k){
   const d=new Date(k+'T00:00:00'),t=iso(new Date()),y=new Date();y.setDate(y.getDate()-1);
   if(k===t)return 'Bugün';
   if(k===iso(y))return 'Dün';
   return d.getDate()+' '+AYLAR[d.getMonth()]+' '+GUNK[d.getDay()];
 }
-function txHTML(e){
+function dayTitle(k){
+  const d=new Date(k+'T00:00:00'),t=iso(new Date()),y=new Date();y.setDate(y.getDate()-1);
+  if(k===t)return 'Bugün';
+  if(k===iso(y))return 'Dün';
+  return GUNLER[d.getDay()];
+}
+
+/* ------------------------- GUNLUK DOSYALAR -------------------------
+   Islemler tek tek listelenmiyor; her gun bir "dosya". Dosyaya dokununca
+   o gunun islemleri alt panelde aciliyor. */
+function dayFiles(list){
+  const g={};
+  list.forEach(e=>{const k=e.ts.slice(0,10);(g[k]=g[k]||[]).push(e);});
+  return Object.entries(g).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,items])=>{
+    items.sort((a,b)=>b.ts.localeCompare(a.ts));
+    const exp=items.filter(isExp);
+    return {
+      key:k, items, n:items.length,
+      expense:sum(exp), income:sum(items.filter(e=>!isExp(e))),
+      cats:[...new Set(exp.map(e=>e.cat))]
+    };
+  });
+}
+function dayFileHTML(f){
+  const d=new Date(f.key+'T00:00:00');
+  const today=f.key===iso(new Date());
+  const shown=f.cats.slice(0,4);
+  const dots=shown.map(id=>`<i style="background:${catById(id).color}"></i>`).join('')
+    +(f.cats.length>shown.length?`<u>+${f.cats.length-shown.length}</u>`:'');
+  const yr=d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'';
+  return `<button class="dayfile${today?' today':''}" data-day="${f.key}" type="button">
+    <span class="dnum"><b>${d.getDate()}</b><span>${AYK[d.getMonth()]}${yr}</span></span>
+    <span>
+      <span class="nm">${dayTitle(f.key)}</span>
+      <span class="meta">${f.n} işlem${f.cats.length?' · ':''}<span class="dots">${dots}</span></span>
+    </span>
+    <span class="amt num">${f.expense?money(f.expense):'—'}${f.income?`<small>+${money(f.income)}</small>`:''}</span>
+    <span class="chev">${svgIcon('right','sm')}</span>
+  </button>`;
+}
+function dayFilesHTML(list,limit){
+  const f=dayFiles(list);
+  return (limit?f.slice(0,limit):f).map(dayFileHTML).join('');
+}
+
+/* ------------------------- ISLEM SATIRI (kaydirmali) ------------------------- */
+function txRowHTML(e){
   const c=catById(e.cat),inc=!isExp(e);
   const card=cardById(e.cardId);
   const payIc=e.paymentMethod==='cash'?'cash':'card';
   const payTxt=e.paymentMethod==='cash'?'Nakit':(card?card.name:'Kart');
-  return `<div class="tx">
-    <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
-    <span>
-      <span class="nm">${esc(e.note||c.name)}</span>
-      <span class="meta">${svgIcon(payIc,'sm')}${esc(payTxt)} · ${e.ts.slice(11,16)}${e.note?' · '+esc(c.name):''}</span>
-    </span>
-    <span class="amt num ${inc?'in':''}">${inc?'+':''}${money(e.amount)}</span>
-    <button class="txdel" data-del="${e.id}" aria-label="Sil">${svgIcon('x')}</button>
+  return `<div class="swipe" data-swipe="${e.id}">
+    <div class="swipe-bg">${svgIcon('trash','sm')}<span>Sil</span></div>
+    <div class="swipe-fg">
+      <button class="tx" type="button" data-edit="${e.id}">
+        <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+        <span>
+          <span class="nm">${esc(e.note||c.name)}</span>
+          <span class="meta">${svgIcon(payIc,'sm')}${esc(payTxt)} · ${e.ts.slice(11,16)}${e.note?' · '+esc(c.name):''}</span>
+        </span>
+        <span class="amt num ${inc?'in':''}">${inc?'+':''}${money(e.amount)}</span>
+      </button>
+    </div>
   </div>`;
+}
+
+/* Kaydirma jesti. Yatay/dikey eksen ilk 6px'te kilitlenir; dikeyse sayfa
+   normal kayar, yataysa satir surukleniyor ve sayfa kaydirmasi durdurulur. */
+const SW_OPEN=96;
+function bindSwipe(root){
+  (root||document).querySelectorAll('[data-swipe]').forEach(row=>{
+    if(row._sw)return; row._sw=true;
+    const fg=row.querySelector('.swipe-fg');
+    const bg=row.querySelector('.swipe-bg');
+    let x0=0,y0=0,dx=0,axis=null,open=false;
+    const set=v=>fg.style.transform='translateX('+v+'px)';
+    const close=()=>{open=false;set(0);};
+    row._close=close;
+
+    row.addEventListener('touchstart',ev=>{
+      if(ev.touches.length>1)return;
+      const t=ev.touches[0];x0=t.clientX;y0=t.clientY;dx=0;axis=null;
+      row.classList.add('dragging');
+    },{passive:true});
+
+    row.addEventListener('touchmove',ev=>{
+      if(ev.touches.length>1)return;
+      const t=ev.touches[0],mx=t.clientX-x0,my=t.clientY-y0;
+      if(axis===null){
+        if(Math.abs(mx)<6&&Math.abs(my)<6)return;
+        axis=Math.abs(mx)>Math.abs(my)?'x':'y';
+        if(axis==='y')row.classList.remove('dragging');
+      }
+      if(axis!=='x')return;
+      ev.preventDefault();
+      const base=open?-SW_OPEN:0;
+      dx=Math.max(Math.min(base+mx,0),-row.offsetWidth);
+      set(dx);
+    },{passive:false});
+
+    const end=()=>{
+      row.classList.remove('dragging');
+      if(axis!=='x'){set(open?-SW_OPEN:0);return;}
+      const w=row.offsetWidth;
+      if(-dx>w*0.45){ set(-w); haptic(); deleteTx(row.dataset.swipe); return; }
+      if(-dx>SW_OPEN*0.55){ open=true; set(-SW_OPEN); haptic(); }
+      else close();
+    };
+    row.addEventListener('touchend',end);
+    row.addEventListener('touchcancel',end);
+
+    /* acikken kirmizi alana dokunmak siler */
+    bg.addEventListener('click',ev=>{ev.stopPropagation();if(open)deleteTx(row.dataset.swipe);});
+
+    /* fare/masaustu icin yedek: satirdaki sil dugmesi yok, cift tiklama da yok.
+       Masaustunde duzenleme panelindeki "Sil" dugmesi kullanilir. */
+  });
+}
+/* baska bir satir acilinca acik olani kapat */
+function closeSwipes(except){
+  document.querySelectorAll('[data-swipe]').forEach(r=>{if(r!==except&&r._close)r._close();});
+}
+
+async function deleteTx(id){
+  const rec=S.expenses.find(e=>e.id===id);
+  if(!rec)return;
+  const day=ui.openDay;
+  await moveToTrash(rec);
+  if(day){ui.openDay=day;renderDaySheet();}
+  haptic();
+  toast('Geri dönüşüm kutusuna taşındı · 24 saat','Geri al',async()=>{
+    const d2=ui.openDay;
+    await restoreFromTrash(rec.id);
+    if(d2){ui.openDay=d2;renderDaySheet();}
+    toast('Geri alındı');
+  });
 }
 
 /* ------------------------- EKLE ------------------------- */
 function suggestions(limit){
   const now=Date.now(),M30=30*DAY,g={};
-  S.expenses.filter(isExp).forEach(e=>{
+  /* oneriler her zaman o an secili islem turunden gelir */
+  S.expenses.filter(e=>(e.type||'expense')===ui.type).forEach(e=>{
     const key=e.cat+'|'+(e.note||'').trim().toLowerCase();
     const o=g[key]||(g[key]={cat:e.cat,note:e.note||'',n:0,score:0,amts:{},last:'',pay:e.paymentMethod});
     const fresh=(now-new Date(e.ts).getTime())<M30;
@@ -921,7 +1356,7 @@ function suggestions(limit){
     .sort((a,b)=>b.score-a.score||b.last.localeCompare(a.last))
     .slice(0,limit)
     .map(o=>({cat:o.cat,note:o.note,pay:o.pay,amount:+Object.entries(o.amts).sort((a,b)=>b[1]-a[1])[0][0]}));
-  if(out.length<3){
+  if(out.length<3&&ui.type==='expense'){
     SEED_SUGG.forEach(id=>{
       if(out.length>=4||out.some(o=>o.cat===id)||!S.categories.some(c=>c.id===id))return;
       out.push({cat:id,note:'',amount:0,pay:'card'});
@@ -945,10 +1380,10 @@ function drawEkle(){
     ui.type='expense';ui.cat=s.cat;ui.pay=s.pay||'card';
     if(s.amount)$('#fAmount').value=nf0.format(s.amount);
     $('#fNote').value=s.note||'';
-    syncSegs();drawCatGrid();validate();haptic();
+    syncSegs();syncCatPick();validate();haptic();
   });
 
-  drawCatGrid();
+  syncCatPick();
   /* kart listesi */
   const cards=S.settings.cards||[];
   $('#fCard').innerHTML='<option value="">Belirtme</option>'+
@@ -956,26 +1391,219 @@ function drawEkle(){
   $('#fCard').value=ui.card;
   $('#cardField').style.display=ui.pay==='card'?'':'none';
 
-  const list=[...S.expenses].sort((a,b)=>b.ts.localeCompare(a.ts));
-  $('#txCount').textContent=list.length?list.length+' kayıt':'';
-  $('#txList').innerHTML=list.length?txListHTML(list.slice(0,60))
-    :emptyState('inbox','Defter boş','İlk işlemini yukarıdan ekle.');
+  const files=dayFiles(S.expenses);
+  $('#txCount').textContent=files.length?files.length+' gün · '+S.expenses.length+' kayıt':'';
+  $('#txList').innerHTML=files.length
+    ? files.slice(0,60).map(dayFileHTML).join('')
+    : emptyState('folder','Defter boş','İlk işlemini yukarıdan ekle. Kayıtlar gün gün dosyalanır.');
   syncSegs();
+  validate();   /* mod degisince Kaydet dugmesinin metni de tazelensin */
 }
 
-function drawCatGrid(){
+/* ------------------------- KATEGORI SECICI -------------------------
+   Ekleme formunda kategoriler artik satir ici grid degil; dokununca
+   acilan bir panelde seciliyor. Duzenleme paneli de ayni seciciyi kullanir. */
+function syncCatPick(){
   const cats=S.categories.filter(c=>(c.kind||'expense')===ui.type);
   if(ui.cat&&!cats.some(c=>c.id===ui.cat))ui.cat=null;
-  $('#catGrid').innerHTML=cats.map(c=>`
-    <button class="ccell ${c.id===ui.cat?'on':''}" data-cat="${c.id}">
-      <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
-      ${esc(c.name)}
-    </button>`).join('');
-  $$('#catGrid [data-cat]').forEach(b=>b.onclick=()=>{
-    ui.cat=b.dataset.cat;drawCatGrid();validate();haptic();
+  const btn=$('#catPick'),dot=$('#catPickDot'),nm=$('#catPickName');
+  if(!btn)return;
+  if(ui.cat){
+    const c=catById(ui.cat);
+    btn.classList.remove('empty');
+    dot.style.background=c.color+'1A';dot.style.color=c.color;
+    dot.innerHTML=svgIcon(c.icon);
+    nm.textContent=c.name;
+  }else{
+    btn.classList.add('empty');
+    dot.style.background='var(--fill-quiet)';dot.style.color='var(--text-muted)';
+    dot.innerHTML=svgIcon('tag');
+    nm.textContent=ui.type==='income'?'Gelir kategorisi seç':'Gider kategorisi seç';
+  }
+}
+/* kind: 'expense' | 'income', selected: id, onPick(id), onBack: geri donus paneli */
+function catPickerSheet(kind,selected,onPick,onBack){
+  const cats=S.categories.filter(c=>(c.kind||'expense')===kind);
+  openSheet(`
+    <h3>${kind==='income'?'Gelir kategorisi':'Gider kategorisi'}</h3>
+    <div class="pickgrid" id="pickGrid">
+      ${cats.map(c=>`
+        <button class="ccell${c.id===selected?' on':''}" data-pick="${c.id}" type="button">
+          <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+          ${esc(c.name)}
+        </button>`).join('')}
+    </div>
+    ${cats.length?'':'<p style="color:var(--text-muted);font-size:var(--t-sm)">Bu türde kategori yok. Ayarlar ekranından ekleyebilirsin.</p>'}
+    <button class="btn sec" id="pickBack" type="button">${onBack?'Geri':'Kapat'}</button>
+  `);
+  $$('#pickGrid [data-pick]').forEach(b=>b.onclick=()=>{
+    haptic();onPick(b.dataset.pick);
+    if(onBack)onBack();else closeSheet();
+  });
+  $('#pickBack').onclick=()=>{ if(onBack)onBack(); else closeSheet(); };
+}
+
+/* ------------------------- GUNLUK DOSYA PANELI ------------------------- */
+function openDaySheet(key){ ui.openDay=key; renderDaySheet(); }
+function renderDaySheet(){
+  const key=ui.openDay; if(!key)return;
+  const items=S.expenses.filter(e=>e.ts.slice(0,10)===key).sort((a,b)=>b.ts.localeCompare(a.ts));
+  if(!items.length){ closeSheet(); return; }
+  const d=new Date(key+'T00:00:00');
+  const exp=sum(items.filter(isExp)), inc=sum(items.filter(e=>!isExp(e)));
+  const byCat={}; items.filter(isExp).forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amount);
+  const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  openSheet(`
+    <h3>${d.getDate()} ${AYLAR[d.getMonth()]} ${d.getFullYear()} · ${GUNLER[d.getDay()]}</h3>
+    <div class="tiles" style="margin-top:0">
+      <div class="tile"><b class="num neg">${moneyC(exp)}</b><span>Gider</span></div>
+      <div class="tile"><b class="num pos">${moneyC(inc)}</b><span>Gelir</span></div>
+      <div class="tile"><b class="num">${items.length}</b><span>İşlem</span></div>
+    </div>
+    ${top?`<div class="note">En çok ${esc(catById(top[0]).name)} · ${money(top[1])}</div>`:''}
+    <div style="margin-top:var(--s4)">${items.map(txRowHTML).join('')}</div>
+    <div class="swipehint">Düzenlemek için dokun · silmek için sola kaydır</div>
+  `);
+  bindSwipe($('#sheetBody'));
+}
+
+/* ------------------------- ISLEM DUZENLEME PANELI -------------------------
+   Panel icinde baska bir panele (kategori secici) gecilebildigi icin form
+   dogrudan kayit uzerinde degil, bir taslak nesne uzerinde calisir; boylece
+   gidip gelince yazilanlar kaybolmaz. */
+const amtToInput=n=>Number.isInteger(n)?nf0.format(n):nf2.format(n);
+function bindAmountInput(el,onChange){
+  el.addEventListener('input',e=>{
+    const raw=e.target.value.replace(/[^\d,]/g,''),[i,dec]=raw.split(',');
+    e.target.value=(i?nf0.format(+i.replace(/\D/g,'')||0):'')+(dec!==undefined?','+dec.slice(0,2):'');
+    onChange&&onChange();
   });
 }
+
+function txSheet(rec){
+  const backDay=ui.openDay;
+  const draft={
+    amount:rec.amount, cat:rec.cat, type:rec.type||'expense',
+    pay:rec.paymentMethod||'card', card:rec.cardId||'', repeat:rec.repeat||'none',
+    note:rec.note||'', date:rec.ts.slice(0,10), time:rec.ts.slice(11,16)
+  };
+  const readFields=()=>{
+    if(!$('#eAmount'))return;
+    draft.amount=parseAmt($('#eAmount').value);
+    draft.note=$('#eNote').value.trim();
+    draft.date=$('#eDate').value||draft.date;
+    draft.time=$('#eTime').value||draft.time;
+    if($('#eCard'))draft.card=$('#eCard').value;
+  };
+  const backToDay=()=>{ if(backDay){ui.openDay=backDay;renderDaySheet();} else closeSheet(); };
+
+  const paint=()=>{
+    const cats=S.categories.filter(c=>(c.kind||'expense')===draft.type);
+    if(draft.cat&&!cats.some(c=>c.id===draft.cat))draft.cat=cats[0]?cats[0].id:null;
+    const c=draft.cat?catById(draft.cat):null;
+    const cards=S.settings.cards||[];
+    openSheet(`
+      <h3>İşlemi düzenle</h3>
+      <div class="field">
+        <label class="lbl" for="eAmount">Tutar</label>
+        <input class="inp num" id="eAmount" type="text" inputmode="decimal" value="${draft.amount?amtToInput(draft.amount):''}" placeholder="0">
+      </div>
+      <div class="field">
+        <span class="lbl">İşlem türü</span>
+        <div class="seg" style="grid-template-columns:1fr 1fr" id="eType">
+          <button data-type="expense" class="${draft.type==='expense'?'on':''}" type="button">Gider</button>
+          <button data-type="income" class="${draft.type==='income'?'on':''}" type="button">Gelir</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Kategori</span>
+        <button class="catpick${c?'':' empty'}" id="eCatPick" type="button">
+          <span class="cdot" style="background:${c?c.color+'1A':'var(--fill-quiet)'};color:${c?c.color:'var(--text-muted)'}">${svgIcon(c?c.icon:'tag')}</span>
+          <span class="nm">${c?esc(c.name):'Kategori seç'}</span>
+          <span class="chev">${svgIcon('chevron')}</span>
+        </button>
+      </div>
+      <div class="field">
+        <span class="lbl">Ödeme türü</span>
+        <div class="seg" style="grid-template-columns:1fr 1fr" id="ePay">
+          <button data-pay="card" class="${draft.pay==='card'?'on':''}" type="button">Kart</button>
+          <button data-pay="cash" class="${draft.pay==='cash'?'on':''}" type="button">Nakit</button>
+        </div>
+      </div>
+      <div class="field" id="eCardField" style="display:${draft.pay==='card'?'':'none'}">
+        <label class="lbl" for="eCard">Hangi kart</label>
+        <div class="selwrap">
+          <select class="inp" id="eCard">
+            <option value="">Belirtme</option>
+            ${cards.map(x=>`<option value="${x.id}"${x.id===draft.card?' selected':''}>${esc(x.name)}</option>`).join('')}
+          </select>
+          <span class="chev">${svgIcon('chevron')}</span>
+        </div>
+      </div>
+      <div class="row2 field">
+        <div><label class="lbl" for="eDate">Tarih</label><input class="inp num" id="eDate" type="date" value="${draft.date}"></div>
+        <div><label class="lbl" for="eTime">Saat</label><input class="inp num" id="eTime" type="time" value="${draft.time}"></div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="eNote">Açıklama</label>
+        <input class="inp" id="eNote" type="text" maxlength="40" value="${esc(draft.note)}" placeholder="Örn. sabah kahvesi">
+      </div>
+      <div class="field">
+        <span class="lbl">Tekrar eden işlem</span>
+        <div class="seg" style="grid-template-columns:repeat(3,1fr)" id="eRepeat">
+          <button data-rep="none" class="${draft.repeat==='none'?'on':''}" type="button">Yok</button>
+          <button data-rep="weekly" class="${draft.repeat==='weekly'?'on':''}" type="button">Haftalık</button>
+          <button data-rep="monthly" class="${draft.repeat==='monthly'?'on':''}" type="button">Aylık</button>
+        </div>
+      </div>
+      <button class="btn" id="eSave" type="button">Değişiklikleri kaydet</button>
+      <button class="btn sec" id="eBack" type="button" style="margin-top:var(--s2)">Vazgeç</button>
+      <button class="btn dang" id="eDel" type="button" style="margin-top:var(--s2)">Geri dönüşüm kutusuna taşı</button>
+    `);
+
+    bindAmountInput($('#eAmount'));
+    $$('#eType button').forEach(b=>b.onclick=()=>{readFields();draft.type=b.dataset.type;paint();});
+    $$('#ePay button').forEach(b=>b.onclick=()=>{
+      readFields();draft.pay=b.dataset.pay;
+      $$('#ePay button').forEach(x=>x.classList.toggle('on',x===b));
+      $('#eCardField').style.display=draft.pay==='card'?'':'none';
+    });
+    $$('#eRepeat button').forEach(b=>b.onclick=()=>{
+      draft.repeat=b.dataset.rep;
+      $$('#eRepeat button').forEach(x=>x.classList.toggle('on',x===b));
+    });
+    $('#eCatPick').onclick=()=>{
+      readFields();
+      catPickerSheet(draft.type,draft.cat,id=>{draft.cat=id;},paint);
+    };
+    $('#eBack').onclick=backToDay;
+    $('#eSave').onclick=async()=>{
+      readFields();
+      if(!(draft.amount>0)){toast('Tutar 0’dan büyük olmalı');return;}
+      if(!draft.cat){toast('Kategori seç');return;}
+      Object.assign(rec,{
+        amount:draft.amount, cat:draft.cat, type:draft.type,
+        paymentMethod:draft.pay, cardId:draft.pay==='card'?draft.card:'',
+        repeat:draft.repeat, note:draft.note,
+        ts:draft.date+'T'+draft.time+':00'
+      });
+      await save();
+      haptic();
+      if(backDay){ui.openDay=draft.date;renderDaySheet();}else closeSheet();
+      toast('İşlem güncellendi');
+    };
+    $('#eDel').onclick=async()=>{
+      closeSheet();
+      await deleteTx(rec.id);
+    };
+  };
+  paint();
+}
 function syncSegs(){
+  /* Tek turlu kullanimda tur secici hic gosterilmez */
+  const single=mode()!=='both';
+  if(single)ui.type=mode()==='income'?'income':'expense';
+  $('#typeField').style.display=single?'none':'';
   $$('#segType button').forEach(b=>b.classList.toggle('on',b.dataset.type===ui.type));
   $$('#segPay button').forEach(b=>b.classList.toggle('on',b.dataset.pay===ui.pay));
   $$('#segRepeat button').forEach(b=>b.classList.toggle('on',b.dataset.rep===ui.repeat));
@@ -991,14 +1619,29 @@ function resetForm(){
   $('#fAmount').value='';$('#fNote').value='';
   const n=new Date();$('#fDate').value=iso(n);$('#fTime').value=pad(n.getHours())+':'+pad(n.getMinutes());
   ui.repeat='none';ui.cat=null;
-  syncSegs();drawCatGrid();validate();
+  syncSegs();syncCatPick();validate();
 }
 
 /* ------------------------- AYARLAR ------------------------- */
+const MODE_LABEL={expense:'Sadece gider',income:'Sadece gelir',both:'Gelir ve gider'};
+const GOALS=[
+  {id:'awareness',t:'Harcama farkındalığı'},
+  {id:'budget',   t:'Bütçe kontrolü'},
+  {id:'save',     t:'Tasarruf hedefi'},
+  {id:'debt',     t:'Borç / taksit takibi'},
+  {id:'student',  t:'Öğrenci bütçesi'},
+  {id:'work',     t:'İş ve serbest çalışma'}
+];
+const goalText=()=>{
+  const g=(S.settings.goals||[]).map(id=>(GOALS.find(x=>x.id===id)||{}).t).filter(Boolean);
+  return g.length?g.join(', '):'belirtilmedi';
+};
+
 function drawAyar(){
   $$('#segPeriod button').forEach(b=>b.classList.toggle('on',b.dataset.period===S.settings.period));
-  const inp=$('#fBudget');
-  if(document.activeElement!==inp)inp.value=S.settings.budget?nf0.format(S.settings.budget):'';
+  $('#modeVal').textContent=MODE_LABEL[mode()];
+  $('#profVal').textContent=S.settings.name?S.settings.name:'—';
+  drawBudgetBody();
 
   $('#catSettings').innerHTML=S.categories.map(c=>`
     <button class="li" data-editcat="${c.id}">
@@ -1016,6 +1659,126 @@ function drawAyar(){
       <button class="txdel" data-delcard="${c.id}" aria-label="Sil">${svgIcon('trash')}</button>
     </div>`).join('')
     :`<div class="li" style="color:var(--text-muted)">Kart eklenmedi</div>`;
+
+  drawTrash();
+}
+
+/* ------------------------- BUTCE BOLUMU -------------------------
+   Gelir de kaydediliyorsa butce elle girilmez; donemin gelirinden
+   yuzde ile turetilir. Boylece gelir degistikce butce kendiliginden guncellenir. */
+function drawBudgetBody(){
+  const box=$('#budgetBody'); if(!box)return;
+  /* kullanici tutar yazarken alani altindan cekme */
+  if(document.activeElement&&document.activeElement.id==='fBudget')return;
+  const {start,end}=currentPeriod();
+  const inc=incomeIn(start,end);
+  const fromIncome=S.settings.budgetMode==='income';
+  $('#budHint').textContent=fromIncome?'gelirden hesaplanıyor':'elle girilen';
+
+  if(mode()==='income'){
+    box.innerHTML=`<p style="margin:0;font-size:var(--t-sm);color:var(--text-muted)">
+      Sadece gelir kaydediyorsun; bütçe halkası gelir toplamını gösteriyor.
+      Bütçe sınırı için Kullanım bölümünden gider kaydını da açman gerekir.</p>`;
+    return;
+  }
+
+  if(fromIncome){
+    const ratio=S.settings.spendRatio||80;
+    box.innerHTML=`
+      <div class="field">
+        <span class="lbl">Gelirin ne kadarını harcayabilirsin</span>
+        <div class="seg" style="grid-template-columns:repeat(4,1fr)" id="segRatio">
+          ${[60,70,80,90].map(v=>`<button data-ratio="${v}" class="${v===ratio?'on':''}" type="button">%${v}</button>`).join('')}
+        </div>
+      </div>
+      <div class="statline"><span class="k">Bu dönemin geliri</span><span class="v num">${money(inc)}</span></div>
+      <div class="statline"><span class="k">Hesaplanan bütçe</span><span class="v num">${money(effectiveBudget(start,end))}<small>gelirin %${ratio}’i</small></span></div>
+      <div class="statline"><span class="k">Hedeflenen tasarruf</span><span class="v num">${money(inc-effectiveBudget(start,end))}<small>gelirin %${100-ratio}’i</small></span></div>
+      <button class="btn sec" id="btnManual" type="button" style="margin-top:var(--s4)">Bunun yerine sabit tutar gir</button>`;
+    $$('#segRatio button').forEach(b=>b.onclick=async()=>{
+      S.settings.spendRatio=+b.dataset.ratio;haptic();await save();
+    });
+    $('#btnManual').onclick=async()=>{S.settings.budgetMode='manual';await save();};
+    hydrateIcons(box);
+    return;
+  }
+
+  box.innerHTML=`
+    <div class="field">
+      <label class="lbl" for="fBudget">Bütçe tutarı</label>
+      <input class="inp num" id="fBudget" type="text" inputmode="numeric" placeholder="0" value="${S.settings.budget?nf0.format(S.settings.budget):''}">
+    </div>
+    ${wantsIncome()?`<button class="btn sec" id="btnFromIncome" type="button">Bütçeyi gelirlerimden hesapla</button>`:''}`;
+  const el=$('#fBudget');
+  el.addEventListener('input',e=>{
+    const raw=e.target.value.replace(/\D/g,'');e.target.value=raw?nf0.format(+raw):'';
+  });
+  el.addEventListener('change',async e=>{S.settings.budget=parseAmt(e.target.value);await save();});
+  if($('#btnFromIncome'))$('#btnFromIncome').onclick=async()=>{S.settings.budgetMode='income';await save();};
+}
+
+/* ------------------------- GERI DONUSUM KUTUSU ------------------------- */
+function drawTrash(){
+  purgeTrash();
+  const box=$('#trashBox');
+  if(!S.trash.length){
+    box.innerHTML=`<div class="li" style="color:var(--text-muted)">Kutu boş</div>`;
+    return;
+  }
+  box.innerHTML=`
+    <div class="li" style="justify-content:space-between">
+      <span class="nm">${S.trash.length} işlem <span class="badge">${S.trash.length}</span></span>
+      <button class="mini" id="trOpen" type="button">${svgIcon('folder','sm')}Aç</button>
+    </div>`;
+  hydrateIcons(box);
+  $('#trOpen').onclick=()=>{haptic();trashSheet();};
+}
+function trashSheet(){
+  purgeTrash();
+  const paint=()=>{
+    if(!S.trash.length){closeSheet();toast('Geri dönüşüm kutusu boş');return;}
+    openSheet(`
+      <h3>Geri dönüşüm kutusu</h3>
+      <p style="font-size:var(--t-xs);color:var(--text-muted);margin:0 0 var(--s4)">
+        Silinen işlemler 24 saat burada bekler, sonra kalıcı olarak silinir.
+        Bu süre boyunca hiçbir hesaba ve grafiğe dahil edilmezler.</p>
+      <div class="card" style="padding:var(--s3) var(--s4)">
+        ${S.trash.map(t=>{
+          const c=catById(t.cat);
+          return `<div class="trashrow">
+            <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
+            <span>
+              <span class="nm">${esc(t.note||c.name)} · ${money(t.amount)}</span>
+              <span class="meta">${dayLabel(t.ts.slice(0,10))} · ${trashLeft(t)}</span>
+            </span>
+            <span class="acts">
+              <button class="mini ok" data-restore="${t.id}" type="button">${svgIcon('undo','sm')}Geri</button>
+              <button class="mini dang" data-purge="${t.id}" type="button">${svgIcon('trash','sm')}</button>
+            </span>
+          </div>`;
+        }).join('')}
+      </div>
+      <button class="btn dang" id="trEmpty" type="button" style="margin-top:var(--s3)">Kutuyu şimdi boşalt</button>
+      <button class="btn sec" id="trClose" type="button" style="margin-top:var(--s2)">Kapat</button>
+    `);
+    $$('#sheetBody [data-restore]').forEach(b=>b.onclick=async()=>{
+      await restoreFromTrash(b.dataset.restore);
+      haptic();toast('İşlem geri yüklendi');paint();
+    });
+    $$('#sheetBody [data-purge]').forEach(b=>b.onclick=async()=>{
+      const ok=await confirmDlg('Kalıcı olarak sil','Bu kayıt geri getirilemez.','Kalıcı sil');
+      if(!ok)return;
+      S.trash=S.trash.filter(t=>t.id!==b.dataset.purge);
+      await save();paint();
+    });
+    $('#trEmpty').onclick=async()=>{
+      const ok=await confirmDlg('Kutuyu boşalt',S.trash.length+' kayıt kalıcı olarak silinecek. Geri alınamaz.','Boşalt');
+      if(!ok)return;
+      S.trash=[];await save();closeSheet();toast('Kutu boşaltıldı');
+    };
+    $('#trClose').onclick=closeSheet;
+  };
+  paint();
 }
 
 /* ===================================================================
@@ -1061,7 +1824,7 @@ function drawTrendChart(start,end){
     const d=new Date(start);d.setDate(d.getDate()+i);
     if(d>now)break;
     const n=new Date(d);n.setDate(n.getDate()+1);
-    acc+=sum(expIn(d,n));
+    acc+=sum(focusIn(d,n));
     labels.push(d.getDate()+' '+AYK[d.getMonth()]);data.push(acc);
   }
   $('#trendHint').textContent=data.length?'kümülatif':'';
@@ -1083,18 +1846,94 @@ function drawTrendChart(start,end){
 /* --------- aralik hesabi --------- */
 function statRange(){
   const now=new Date();
-  if(ui.range==='week'){const s=weekStart(now);return{s,e:new Date(Math.min(+periodEnd(s,'weekly'),+now+1)),name:'Bu hafta',len:7};}
-  if(ui.range==='month'){const s=new Date(now.getFullYear(),now.getMonth(),1);return{s,e:now,name:AYLAR[now.getMonth()],len:new Date(now.getFullYear(),now.getMonth()+1,0).getDate()};}
-  if(ui.range==='q'){const s=new Date(now.getFullYear(),now.getMonth()-2,1);return{s,e:now,name:'Son 3 ay',len:Math.round((now-s)/DAY)};}
-  if(ui.range==='year'){const s=new Date(now.getFullYear(),0,1);return{s,e:now,name:now.getFullYear()+'',len:Math.round((now-s)/DAY)};}
+  if(ui.range==='week'){
+    const s=weekStart(now);
+    return{s,e:new Date(Math.min(+periodEnd(s,'weekly'),+now+1)),name:'Bu hafta',key:'week'};
+  }
+  if(ui.range==='month'){
+    const s=new Date(now.getFullYear(),now.getMonth(),1);
+    return{s,e:now,name:AYLAR[now.getMonth()]+' '+now.getFullYear(),key:'month'};
+  }
+  if(ui.range==='q'){
+    const s=new Date(now.getFullYear(),now.getMonth()-2,1);
+    return{s,e:now,name:'Son 3 ay',key:'q'};
+  }
+  if(ui.range==='year'){
+    const s=new Date(now.getFullYear(),0,1);
+    return{s,e:now,name:now.getFullYear()+'',key:'year'};
+  }
   const a=ui.from?new Date(ui.from+'T00:00:00'):new Date(now.getFullYear(),now.getMonth(),1);
   const b=ui.to?new Date(ui.to+'T23:59:59'):now;
-  return{s:a,e:b,name:'Özel aralık',len:Math.max(Math.round((b-a)/DAY),1)};
+  return{s:a,e:b,name:'Özel aralık',key:'custom'};
 }
+/* Onceki donem: bir onceki takvim doneminin AYNI uzunluktaki dilimi.
+   Yarim ayi tamamlanmis aya karsi kiyaslamak yaniltici olurdu. */
 function prevRange(r){
+  const days=Math.max(Math.ceil((r.e-r.s)/DAY),1);
+  if(r.key==='month'){
+    const s=new Date(r.s.getFullYear(),r.s.getMonth()-1,1);
+    const e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+days);
+    const cap=new Date(r.s.getFullYear(),r.s.getMonth(),1);
+    return{s,e:new Date(Math.min(+e,+cap))};
+  }
+  if(r.key==='year'){
+    const s=new Date(r.s.getFullYear()-1,0,1);
+    return{s,e:new Date(s.getFullYear(),0,1+days)};
+  }
   const span=r.e-r.s;
   return{s:new Date(+r.s-span),e:new Date(+r.s)};
 }
+
+/* --------- istatistik yardimcilari --------- */
+function median(a){
+  if(!a.length)return 0;
+  const s=[...a].sort((x,y)=>x-y),m=s.length>>1;
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+function stdev(a){
+  if(a.length<2)return 0;
+  const m=a.reduce((t,x)=>t+x,0)/a.length;
+  return Math.sqrt(a.reduce((t,x)=>t+(x-m)*(x-m),0)/(a.length-1));
+}
+/* yuzde degisim; taban 0 ise kiyas yapilamaz */
+function delta(cur,prev){
+  if(!prev)return{pct:null,abs:cur-prev};
+  return{pct:Math.round((cur-prev)/prev*100),abs:cur-prev};
+}
+/* invert=true -> artis iyi demektir (gelir gibi) */
+function deltaHTML(d,invert){
+  if(d.pct===null)return '<span class="trend flat">kıyas yok</span>';
+  if(Math.abs(d.pct)<3)return '<span class="trend flat">sabit</span>';
+  const bad=invert?d.pct<0:d.pct>0;
+  const ic=d.pct>0?svgIcon('arrow-up','sm'):svgIcon('arrow-down','sm');
+  return '<span class="trend '+(bad?'up':'down')+'">'+ic+'%'+Math.abs(d.pct)+'</span>';
+}
+function deltaCell(d){
+  if(d.pct===null)return '<span class="d-flat">—</span>';
+  if(Math.round(d.abs)===0)return '<span class="d-flat">0</span>';
+  return '<span class="'+(d.abs>0?'d-up':'d-down')+'">'+(d.abs>0?'+':'−')+nf0.format(Math.abs(Math.round(d.abs)))+'</span>';
+}
+/* gunluk gider serisi: [{k:'YYYY-MM-DD', v:tutar}] */
+function dailySeries(a,b){
+  const out=[],idx={};
+  const end=new Date(Math.min(+b,Date.now()));
+  const d=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  let guard=0;
+  while(d<=end&&guard++<800){ const k=iso(d); idx[k]=out.length; out.push({k,v:0}); d.setDate(d.getDate()+1); }
+  S.expenses.forEach(e=>{
+    if(!isExp(e))return;
+    const i=idx[e.ts.slice(0,10)];
+    if(i!==undefined)out[i].v+=e.amount;
+  });
+  return out;
+}
+function movingAvg(v,w){
+  return v.map((_,i)=>{
+    const s=v.slice(Math.max(0,i-w+1),i+1);
+    return s.reduce((t,x)=>t+x,0)/s.length;
+  });
+}
+const dmy=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1);
 
 function drawStat(){
   const body=$('#statBody');
@@ -1108,109 +1947,242 @@ function drawStat(){
   }
 
   const r=statRange(), pr=prevRange(r);
-  const items=expIn(r.s,r.e), prevItems=expIn(pr.s,pr.e);
+  const all=txIn(r.s,r.e), items=all.filter(isExp);
+  const prevAll=txIn(pr.s,pr.e), prevItems=prevAll.filter(isExp);
+
   const total=sum(items), prevTotal=sum(prevItems);
-  const days=Math.max(Math.round((r.e-r.s)/DAY),1);
+  const inc=sum(all.filter(e=>!isExp(e))), prevInc=sum(prevAll.filter(e=>!isExp(e)));
+  const net=inc-total;
+  const days=Math.max(Math.ceil((r.e-r.s)/DAY),1);
+  const prevDays=Math.max(Math.ceil((pr.e-pr.s)/DAY),1);
 
-  /* gunluk kirilim, en yuksek gun */
-  const byDay={};items.forEach(e=>byDay[e.ts.slice(0,10)]=(byDay[e.ts.slice(0,10)]||0)+e.amount);
-  const top=Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+  const amounts=items.map(e=>e.amount);
+  const dTot=delta(total,prevTotal), dInc=delta(inc,prevInc);
+  const dAvg=delta(total/days,prevTotal/prevDays);
 
-  const pct=prevTotal>0?Math.round((total-prevTotal)/prevTotal*100):null;
-  const tCls=pct===null?'flat':Math.abs(pct)<3?'flat':pct>0?'up':'down';
-  const tIco=pct===null||Math.abs(pct)<3?'':(pct>0?svgIcon('arrow-up','sm'):svgIcon('arrow-down','sm'));
-  const tTxt=pct===null?'kıyas yok':Math.abs(pct)<3?'sabit':'%'+Math.abs(pct);
+  /* gunluk seri + 7 gunluk hareketli ortalama */
+  const ser=dailySeries(r.s,r.e);
+  const vals=ser.map(o=>o.v);
+  const ma=movingAvg(vals,7);
+  const activeDays=vals.filter(v=>v>0).length;
+  const topDay=ser.reduce((m,o)=>(!m||o.v>m.v)?o:m,null);
 
-  const byCat={};items.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amount);
-  const cats=Object.entries(byCat).map(([id,v])=>({c:catById(id),v})).sort((a,b)=>b.v-a.v);
+  /* tasarruf orani */
+  const saveRate=inc>0?Math.round((inc-total)/inc*100):null;
+
+  /* kategori tablosu, onceki donemle karsilastirmali */
+  const agg=list=>{const m={};list.forEach(e=>{const o=m[e.cat]||(m[e.cat]={v:0,n:0});o.v+=e.amount;o.n++;});return m;};
+  const A=agg(items), B=agg(prevItems);
+  const cats=Object.entries(A).map(([id,o])=>({
+    c:catById(id), v:o.v, n:o.n, avg:o.v/o.n, prev:(B[id]||{v:0}).v
+  })).sort((x,y)=>y.v-x.v);
+
+  /* haftanin gunu: o gunden kac tane gectiyse ona bolunmus ortalama */
+  const wdSum=[0,0,0,0,0,0,0], wdCnt=[0,0,0,0,0,0,0];
+  ser.forEach(o=>{const g=new Date(o.k+'T00:00:00').getDay();wdSum[g]+=o.v;wdCnt[g]++;});
+  const wdOrder=[1,2,3,4,5,6,0].map(i=>({g:GUNK[i],avg:wdCnt[i]?wdSum[i]/wdCnt[i]:0}));
+  const wdMax=Math.max.apply(null,wdOrder.map(x=>x.avg).concat([1]));
+
+  /* gunun saati */
+  const SLOTS=[['Gece',0,6],['Sabah',6,12],['Öğleden sonra',12,18],['Akşam',18,24]];
+  const slots=SLOTS.map(s=>{
+    const list=items.filter(e=>{const h=+e.ts.slice(11,13);return h>=s[1]&&h<s[2];});
+    return{k:s[0],v:sum(list),n:list.length};
+  });
+  const slotMax=Math.max.apply(null,slots.map(s=>s.v).concat([1]));
 
   const cash=sum(items.filter(e=>e.paymentMethod==='cash'));
   const card=total-cash;
   const bigTx=[...items].sort((a,b)=>b.amount-a.amount).slice(0,5);
 
-  body.innerHTML=`
-    ${weekCompareHTML()}
+  /* ay sonu projeksiyonu — yalnizca icinde bulunulan ay icin */
+  let projHTML='';
+  if(r.key==='month'){
+    const now=new Date();
+    const inMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const elapsed=Math.max(now.getDate(),1);
+    const pace=total/elapsed, proj=pace*inMonth;
+    const daysLeft=inMonth-elapsed;
+    /* Butce aylik donemdeyse kiyaslanabilir; haftalik butce ay sonu projeksiyonuyla
+       ayni olcekte olmadigi icin karsilastirilmaz. */
+    const monthly=S.settings.period==='monthly';
+    const bud=monthly?effectiveBudget(new Date(now.getFullYear(),now.getMonth(),1),
+                                      new Date(now.getFullYear(),now.getMonth()+1,1)):0;
+    const budgetLine=bud>0
+      ? (proj>bud
+          ? '<div class="statline"><span class="k">Bütçe durumu</span><span class="v num" style="color:var(--danger)">'+money(proj-bud)+' aşım<small>bu tempo sürerse · bütçe '+money(bud)+'</small></span></div>'
+          : '<div class="statline"><span class="k">Bütçe durumu</span><span class="v num" style="color:var(--success)">'+money(bud-proj)+' pay kalır<small>bu tempo sürerse · bütçe '+money(bud)+'</small></span></div>')
+      : '<div class="statline"><span class="k">Bütçe durumu</span><span class="v"><small>'+
+        (!monthly?'Bütçe dönemi haftalık, ay sonuyla kıyaslanmıyor'
+          :S.settings.budgetMode==='income'?'Bu ay gelir kaydı yok, bütçe hesaplanamıyor'
+          :'Ayarlar’dan bütçe belirle')+'</small></span></div>';
+    const safeDaily=bud>0?Math.max(bud-total,0)/Math.max(daysLeft,1):null;
+    projHTML=
+      '<div class="sec"><h2>Ay sonu projeksiyonu</h2><span class="hint">'+elapsed+'/'+inMonth+' gün</span></div>'+
+      '<div class="card">'+
+        '<div class="statline"><span class="k">Tahmini ay sonu gideri</span><span class="v num">'+money(proj)+'<small>günlük '+money(pace)+' tempoyla</small></span></div>'+
+        budgetLine+
+        (safeDaily!==null&&daysLeft>0?'<div class="statline"><span class="k">Kalan '+daysLeft+' gün için sınır</span><span class="v num">'+money(safeDaily)+'<small>bütçeyi aşmamak için günlük</small></span></div>':'')+
+      '</div>'+
+      '<p class="note">Projeksiyon, bugüne kadarki günlük ortalamanın ay sonuna dek aynı kalacağı varsayımıyla hesaplanır; tekrar eden ödemeler ayrıca eklenmez.</p>';
+  }
 
-    <div class="sec"><h2>${esc(r.name)}</h2><span class="hint">${days} gün</span></div>
-    <div class="kpis">
-      <div class="kpi"><span class="k">Toplam harcama</span><span class="v num">${moneyC(total)}</span></div>
-      <div class="kpi"><span class="k">Geçen döneme göre</span><span class="v sm"><span class="trend ${tCls}">${tIco}${tTxt}</span></span></div>
-      <div class="kpi"><span class="k">Günlük ortalama</span><span class="v num">${moneyC(total/days)}</span></div>
-      <div class="kpi"><span class="k">En yüksek gün</span><span class="v sm num">${top?moneyC(top[1]):'—'}</span>
-        <span class="k" style="margin-top:2px">${top?dayLabel(top[0]):'kayıt yok'}</span></div>
-    </div>
+  const rangeEnd=new Date(Math.min(+r.e,Date.now()));
 
-    <div class="sec"><h2>Kategori dağılımı</h2></div>
-    <div class="card">
-      ${cats.length?`<div class="chartbox"><canvas id="chDonut"></canvas></div>
-      <div class="legend">${cats.map(x=>`
-        <div class="lg"><span class="sw" style="background:${x.c.color}"></span>
-          <span class="nm">${esc(x.c.name)}</span>
-          <span class="v">${money(x.v)}</span>
-          <span class="p">%${Math.round(x.v/total*100)}</span></div>`).join('')}</div>`
-      :'<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta gider yok.</p>'}
-    </div>
+  body.innerHTML=
+    '<div class="sec"><h2>'+esc(r.name)+'</h2><span class="hint">'+dmy(r.s)+' – '+dmy(rangeEnd)+' · '+days+' gün</span></div>'+
+    '<div class="kpis">'+
+      '<div class="kpi"><span class="k">'+svgIcon('arrow-down','sm')+'Toplam gider</span><span class="v num">'+moneyC(total)+'</span></div>'+
+      '<div class="kpi"><span class="k">'+svgIcon('arrow-up','sm')+'Toplam gelir</span><span class="v num">'+moneyC(inc)+'</span></div>'+
+      '<div class="kpi"><span class="k">'+svgIcon('sigma','sm')+'Net</span><span class="v num" style="color:'+(net>=0?'var(--success)':'var(--danger)')+'">'+moneyC(net)+'</span></div>'+
+      '<div class="kpi"><span class="k">'+svgIcon('target','sm')+'Tasarruf oranı</span><span class="v num">'+(saveRate===null?'—':'%'+saveRate)+'</span></div>'+
+      '<div class="kpi"><span class="k">'+svgIcon('calendar','sm')+'Günlük ortalama</span><span class="v num">'+moneyC(total/days)+'</span></div>'+
+      '<div class="kpi"><span class="k">'+svgIcon('receipt','sm')+'İşlem sayısı</span><span class="v num">'+items.length+'</span></div>'+
+    '</div>'+
 
-    <div class="sec"><h2>Gelir / gider</h2><span class="hint">son 6 ay</span></div>
-    <div class="card"><div class="chartbox"><canvas id="chBars"></canvas></div></div>
+    '<div class="sec"><h2>Geçen döneme göre</h2><span class="hint">'+prevDays+' günlük eş dilim</span></div>'+
+    '<div class="card">'+
+      '<div class="statline"><span class="k">Gider</span><span class="v num">'+money(total)+' '+deltaHTML(dTot)+'<small>önceki '+money(prevTotal)+'</small></span></div>'+
+      '<div class="statline"><span class="k">Gelir</span><span class="v num">'+money(inc)+' '+deltaHTML(dInc,true)+'<small>önceki '+money(prevInc)+'</small></span></div>'+
+      '<div class="statline"><span class="k">Günlük ortalama</span><span class="v num">'+money(total/days)+' '+deltaHTML(dAvg)+'<small>önceki '+money(prevTotal/prevDays)+'</small></span></div>'+
+      '<div class="statline"><span class="k">Harcama yapılan gün</span><span class="v num">'+activeDays+' / '+days+'<small>%'+Math.round(activeDays/days*100)+' yoğunluk</small></span></div>'+
+      '<div class="statline"><span class="k">En yüksek gün</span><span class="v num">'+((topDay&&topDay.v)?money(topDay.v):'—')+'<small>'+((topDay&&topDay.v)?dayLabel(topDay.k):'kayıt yok')+'</small></span></div>'+
+    '</div>'+
 
-    <div class="sec"><h2>Kümülatif seyir</h2><span class="hint">geçen dönem kesikli</span></div>
-    <div class="card"><div class="chartbox tall"><canvas id="chCum"></canvas></div></div>
+    projHTML+
 
-    <div class="sec"><h2>Kart / nakit</h2></div>
-    <div class="card">
-      ${total?`<div class="chartbox short"><canvas id="chPay"></canvas></div>
-      <div class="legend">
-        <div class="lg"><span class="sw" style="background:${TOK('--accent')}"></span><span class="nm">Kart</span><span class="v">${money(card)}</span><span class="p">%${Math.round(card/total*100)}</span></div>
-        <div class="lg"><span class="sw" style="background:${TOK('--success')}"></span><span class="nm">Nakit</span><span class="v">${money(cash)}</span><span class="p">%${Math.round(cash/total*100)}</span></div>
-      </div>`:'<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta ödeme yok.</p>'}
-    </div>
+    '<div class="sec"><h2>Günlük harcama</h2><span class="hint">çizgi: 7 günlük ortalama</span></div>'+
+    '<div class="card"><div class="chartbox tall"><canvas id="chDaily"></canvas></div></div>'+
 
-    <div class="sec"><h2>En çok harcanan 5 kategori</h2></div>
-    ${cats.length?`<div class="card">${cats.slice(0,5).map(x=>`
-      <div class="crow">
-        <span class="cdot" style="background:${x.c.color}1A;color:${x.c.color}">${svgIcon(x.c.icon)}</span>
-        <span><span class="nm">${esc(x.c.name)}</span>
-          <span class="track"><span class="fill" style="width:${x.v/cats[0].v*100}%;background:${x.c.color}"></span></span></span>
-        <span><span class="amt num">${money(x.v)}</span><span class="pct num">%${Math.round(x.v/total*100)}</span></span>
-      </div>`).join('')}</div>`:emptyState('bar','Veri yok','Bu aralıkta gider kaydı bulunmuyor.')}
+    '<div class="sec"><h2>İşlem büyüklüğü</h2><span class="hint">'+amounts.length+' gider işlemi</span></div>'+
+    '<div class="card">'+
+      (amounts.length
+        ? '<div class="statline"><span class="k">Ortalama işlem</span><span class="v num">'+money(total/amounts.length)+'</span></div>'+
+          '<div class="statline"><span class="k">Medyan işlem</span><span class="v num">'+money(median(amounts))+'<small>işlemlerin yarısı bunun altında</small></span></div>'+
+          '<div class="statline"><span class="k">Standart sapma</span><span class="v num">'+money(stdev(amounts))+'<small>tutarların dağılım genişliği</small></span></div>'+
+          '<div class="statline"><span class="k">En küçük – en büyük</span><span class="v num">'+money(Math.min.apply(null,amounts))+' – '+money(Math.max.apply(null,amounts))+'</span></div>'
+        : '<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta gider yok.</p>')+
+    '</div>'+
+    (amounts.length>3
+      ? '<p class="note">Ortalama ile medyan arasındaki fark '+money(Math.abs(total/amounts.length-median(amounts)))+'. Ortalama medyandan belirgin yüksekse birkaç büyük işlem tabloyu yukarı çekiyor demektir.</p>'
+      : '')+
 
-    <div class="sec"><h2>En büyük 5 işlem</h2></div>
-    ${bigTx.length?`<div class="card">${bigTx.map(e=>{
-      const c=catById(e.cat);
-      return `<div class="crow" style="grid-template-columns:36px 1fr auto">
-        <span class="cdot" style="background:${c.color}1A;color:${c.color}">${svgIcon(c.icon)}</span>
-        <span><span class="nm">${esc(e.note||c.name)}</span>
-          <span class="pct" style="text-align:left">${dayLabel(e.ts.slice(0,10))} · ${e.paymentMethod==='cash'?'Nakit':'Kart'}</span></span>
-        <span class="amt num">${money(e.amount)}</span>
-      </div>`;}).join('')}</div>`:emptyState('bar','Veri yok','Bu aralıkta işlem bulunmuyor.')}
-  `;
+    '<div class="sec"><h2>Kategori dağılımı</h2><span class="hint">'+cats.length+' kategori</span></div>'+
+    '<div class="card">'+
+      (cats.length
+        ? '<div class="chartbox"><canvas id="chDonut"></canvas></div>'+
+          '<div class="tblwrap" style="margin-top:var(--s4)"><table class="dt">'+
+          '<thead><tr><th>Kategori</th><th>Tutar</th><th>Pay</th><th>İşlem</th><th>Ort.</th><th>Fark</th></tr></thead><tbody>'+
+          cats.map(x=>'<tr>'+
+            '<td><span class="cn"><i style="background:'+x.c.color+'"></i>'+esc(x.c.name)+'</span></td>'+
+            '<td>'+nf0.format(Math.round(x.v))+'</td>'+
+            '<td>%'+Math.round(x.v/total*100)+'</td>'+
+            '<td>'+x.n+'</td>'+
+            '<td>'+nf0.format(Math.round(x.avg))+'</td>'+
+            '<td>'+deltaCell(delta(x.v,x.prev))+'</td>'+
+          '</tr>').join('')+
+          '</tbody></table></div>'
+        : '<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta gider yok.</p>')+
+    '</div>'+
+    (cats.length?'<p class="note">Fark sütunu, önceki dönemin eş uzunluktaki dilimine göre tutar değişimidir. Tüm tutarlar ₺.</p>':'')+
+
+    '<div class="sec"><h2>Haftanın günü</h2><span class="hint">gün başına ortalama</span></div>'+
+    '<div class="card"><div class="prof">'+
+      wdOrder.map(x=>'<div class="prow'+(x.avg===wdMax&&wdMax>0?' peak':'')+'">'+
+        '<span class="pk">'+x.g+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+(x.avg/wdMax*100)+'%;background:'+(x.avg===wdMax?'var(--navy-900)':'var(--accent)')+'"></span></span>'+
+        '<span class="pv">'+nf0.format(Math.round(x.avg))+' ₺</span></div>').join('')+
+    '</div></div>'+
+
+    '<div class="sec"><h2>Günün saati</h2><span class="hint">toplam harcama</span></div>'+
+    '<div class="card"><div class="prof">'+
+      slots.map(s=>'<div class="prow'+(s.v===slotMax&&slotMax>0?' peak':'')+'" style="grid-template-columns:104px 1fr auto">'+
+        '<span class="pk">'+s.k+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+(s.v/slotMax*100)+'%;background:'+(s.v===slotMax?'var(--navy-900)':'var(--accent)')+'"></span></span>'+
+        '<span class="pv">'+nf0.format(Math.round(s.v))+' ₺<br><span style="font-weight:500;color:var(--text-muted)">'+s.n+' işlem</span></span></div>').join('')+
+    '</div></div>'+
+
+    '<div class="sec"><h2>Gelir / gider / net</h2><span class="hint">son 6 ay</span></div>'+
+    '<div class="card"><div class="chartbox tall"><canvas id="chBars"></canvas></div></div>'+
+
+    '<div class="sec"><h2>Kümülatif seyir</h2><span class="hint">geçen dönem kesikli</span></div>'+
+    '<div class="card"><div class="chartbox tall"><canvas id="chCum"></canvas></div></div>'+
+
+    '<div class="sec"><h2>Kart / nakit</h2></div>'+
+    '<div class="card">'+
+      (total
+        ? '<div class="chartbox short"><canvas id="chPay"></canvas></div>'+
+          '<div class="legend">'+
+          '<div class="lg"><span class="sw" style="background:'+TOK('--accent')+'"></span><span class="nm">Kart</span><span class="v">'+money(card)+'</span><span class="p">%'+Math.round(card/total*100)+'</span></div>'+
+          '<div class="lg"><span class="sw" style="background:'+TOK('--success')+'"></span><span class="nm">Nakit</span><span class="v">'+money(cash)+'</span><span class="p">%'+Math.round(cash/total*100)+'</span></div>'+
+          '</div>'
+        : '<p style="color:var(--text-muted);font-size:var(--t-sm);margin:0">Bu aralıkta ödeme yok.</p>')+
+    '</div>'+
+
+    '<div class="sec"><h2>En büyük 5 işlem</h2></div>'+
+    (bigTx.length
+      ? '<div class="card">'+bigTx.map(e=>{
+          const c=catById(e.cat);
+          return '<div class="crow" style="grid-template-columns:36px 1fr auto">'+
+            '<span class="cdot" style="background:'+c.color+'1A;color:'+c.color+'">'+svgIcon(c.icon)+'</span>'+
+            '<span><span class="nm">'+esc(e.note||c.name)+'</span>'+
+            '<span class="pct" style="text-align:left">'+dayLabel(e.ts.slice(0,10))+' · '+(e.paymentMethod==='cash'?'Nakit':'Kart')+' · toplamın %'+Math.round(e.amount/total*100)+'’i</span></span>'+
+            '<span class="amt num">'+money(e.amount)+'</span></div>';
+        }).join('')+'</div>'
+      : emptyState('bar','Veri yok','Bu aralıkta işlem bulunmuyor.'))+
+
+    weekCompareHTML();
+
   hydrateIcons(body);
 
-  /* --- donut --- */
+  /* --- gunluk harcama + hareketli ortalama --- */
+  mk('chDaily',{
+    type:'bar',
+    data:{
+      labels:ser.map(o=>{const d=new Date(o.k+'T00:00:00');return d.getDate()+' '+AYK[d.getMonth()];}),
+      datasets:[
+        {type:'line',label:'7 günlük ortalama',data:ma,borderColor:TOK('--navy-900'),borderWidth:2,
+         pointRadius:0,pointHoverRadius:4,tension:.3,order:0},
+        {type:'bar',label:'Günlük gider',data:vals,backgroundColor:TOK('--accent-bar'),
+         hoverBackgroundColor:TOK('--accent'),borderRadius:4,maxBarThickness:18,order:1}
+      ]
+    },
+    options:{
+      plugins:{legend:{display:true,labels:{color:TOK('--text-muted'),font:CH_FONT,boxWidth:12,boxHeight:2}}},
+      scales:{
+        x:axis({grid:{display:false},ticks:{color:TOK('--text-muted'),font:CH_FONT,maxTicksLimit:8,autoSkip:true}}),
+        y:axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}})
+      }
+    }
+  });
+
+  /* --- kategori donutu --- */
   if(cats.length) mk('chDonut',{
     type:'doughnut',
     data:{labels:cats.map(x=>x.c.name),datasets:[{
       data:cats.map(x=>x.v),backgroundColor:cats.map(x=>x.c.color),
       borderWidth:2,borderColor:TOK('--surface'),hoverOffset:6
     }]},
-    options:{cutout:'62%',plugins:{tooltip:{callbacks:{label:c=>' '+c.label+': '+money(c.parsed)}}}}
+    options:{cutout:'62%',plugins:{tooltip:{callbacks:{
+      label:c=>' '+c.label+': '+money(c.parsed)+' (%'+Math.round(c.parsed/total*100)+')'
+    }}}}
   });
 
-  /* --- aylik gelir/gider --- */
-  const now=new Date(),ml=[],inc=[],exp=[];
+  /* --- aylik gelir/gider + net --- */
+  const now=new Date(),ml=[],mIn=[],mEx=[],mNet=[];
   for(let i=5;i>=0;i--){
     const s=new Date(now.getFullYear(),now.getMonth()-i,1),e=new Date(now.getFullYear(),now.getMonth()-i+1,1);
     const t=txIn(s,e);
-    ml.push(AYK[s.getMonth()]);
-    inc.push(sum(t.filter(x=>!isExp(x))));
-    exp.push(sum(t.filter(isExp)));
+    const gi=sum(t.filter(x=>!isExp(x))),ge=sum(t.filter(isExp));
+    ml.push(AYK[s.getMonth()]);mIn.push(gi);mEx.push(ge);mNet.push(gi-ge);
   }
   mk('chBars',{
     type:'bar',
     data:{labels:ml,datasets:[
-      {label:'Gelir',data:inc,backgroundColor:TOK('--success'),borderRadius:6,maxBarThickness:22},
-      {label:'Gider',data:exp,backgroundColor:TOK('--accent'),borderRadius:6,maxBarThickness:22}
+      {type:'line',label:'Net',data:mNet,borderColor:TOK('--navy-900'),borderWidth:2,
+       pointRadius:3,pointBackgroundColor:TOK('--navy-900'),tension:.25,order:0},
+      {type:'bar',label:'Gelir',data:mIn,backgroundColor:TOK('--success'),borderRadius:6,maxBarThickness:20,order:1},
+      {type:'bar',label:'Gider',data:mEx,backgroundColor:TOK('--accent'),borderRadius:6,maxBarThickness:20,order:1}
     ]},
     options:{plugins:{legend:{display:true,labels:{color:TOK('--text-muted'),font:CH_FONT,boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}},
       scales:{x:axis({grid:{display:false}}),y:axis({ticks:{color:TOK('--text-muted'),font:CH_FONT,callback:v=>nf0.format(v)}})}}
@@ -1220,7 +2192,7 @@ function drawStat(){
   const cum=(a,b,n)=>{
     const out=[];let acc=0;
     for(let i=0;i<n;i++){
-      const d=new Date(a);d.setDate(d.getDate()+i);
+      const d=new Date(a.getFullYear(),a.getMonth(),a.getDate()+i);
       if(d>b){out.push(null);continue;}
       const nx=new Date(d);nx.setDate(nx.getDate()+1);
       acc+=sum(expIn(d,nx));out.push(acc);
@@ -1313,7 +2285,7 @@ $('#fAmount').addEventListener('input',e=>{
   e.target.value=(i?nf0.format(+i.replace(/\D/g,'')||0):'')+(d!==undefined?','+d.slice(0,2):'');
   validate();
 });
-$$('#segType button').forEach(b=>b.onclick=()=>{ui.type=b.dataset.type;syncSegs();drawCatGrid();validate();});
+$$('#segType button').forEach(b=>b.onclick=()=>{ui.type=b.dataset.type;syncSegs();syncCatPick();validate();});
 $$('#segPay button').forEach(b=>b.onclick=()=>{ui.pay=b.dataset.pay;syncSegs();});
 $$('#segRepeat button').forEach(b=>b.onclick=()=>{ui.repeat=b.dataset.rep;syncSegs();});
 $('#fCard').addEventListener('change',e=>ui.card=e.target.value);
@@ -1340,24 +2312,81 @@ $('#btnSave').onclick=async()=>{
   });
 };
 
-/* --- islem silme: onay + geri al --- */
-document.addEventListener('click',async ev=>{
-  const b=ev.target.closest('[data-del]');if(!b)return;
-  const rec=S.expenses.find(e=>e.id===b.dataset.del);if(!rec)return;
-  const c=catById(rec.cat);
-  const ok=await confirmDlg('İşlemi sil','"'+(rec.note||c.name)+'" · '+money(rec.amount)+' kaydı silinecek.','Sil');
-  if(!ok)return;
-  S.expenses=S.expenses.filter(e=>e.id!==rec.id);
-  await save();
-  toast('Silindi','Geri al',async()=>{S.expenses.push(rec);await save();toast('Geri alındı');});
+/* --- gunluk dosyayi ac / islemi duzenle --- */
+document.addEventListener('click',ev=>{
+  const day=ev.target.closest('[data-day]');
+  if(day){ haptic(); openDaySheet(day.dataset.day); return; }
+  const ed=ev.target.closest('[data-edit]');
+  if(ed){
+    const row=ed.closest('[data-swipe]');
+    /* satir kaydirilarak acilmissa dokunus once onu kapatir */
+    if(row&&row.querySelector('.swipe-fg').style.transform&&
+       row.querySelector('.swipe-fg').style.transform!=='translateX(0px)'){
+      row._close&&row._close();return;
+    }
+    const rec=S.expenses.find(e=>e.id===ed.dataset.edit);
+    if(rec){haptic();txSheet(rec);}
+  }
 });
+
+/* --- kategori secici (ekleme formu) --- */
+$('#catPick').onclick=()=>{
+  haptic();
+  catPickerSheet(ui.type,ui.cat,id=>{ui.cat=id;syncCatPick();validate();},null);
+};
 
 /* --- butce --- */
 $$('#segPeriod button').forEach(b=>b.onclick=async()=>{S.settings.period=b.dataset.period;await save();});
-$('#fBudget').addEventListener('input',e=>{
-  const raw=e.target.value.replace(/\D/g,'');e.target.value=raw?nf0.format(+raw):'';
-});
-$('#fBudget').addEventListener('change',async e=>{S.settings.budget=parseAmt(e.target.value);await save();});
+
+/* --- kullanim modu ve profil --- */
+$('#liMode').onclick=()=>{
+  openSheet(`
+    <h3>Ne kaydediyorsun</h3>
+    <p style="font-size:var(--t-xs);color:var(--text-muted);margin:0 0 var(--s4)">
+      Bu seçim ekleme ekranını ve bütçenin nasıl hesaplandığını belirler. Kayıtlı verilerin silinmez.</p>
+    ${modeOptionsHTML(mode())}
+    <button class="btn" id="mSave" type="button" style="margin-top:var(--s3)">Kaydet</button>
+  `);
+  let m=mode();
+  $$('#sheetBody [data-mode]').forEach(b=>b.onclick=()=>{
+    m=b.dataset.mode;haptic();
+    $$('#sheetBody [data-mode]').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  $('#mSave').onclick=async()=>{
+    S.settings.mode=m;
+    if(m==='expense')S.settings.budgetMode='manual';
+    ui.type=m==='income'?'income':'expense';
+    ui.cat=null;
+    await save();closeSheet();toast('Kullanım modu güncellendi');
+  };
+};
+$('#liProfile').onclick=()=>{
+  openSheet(`
+    <h3>Profil ve amaç</h3>
+    <div class="field">
+      <label class="lbl" for="pName">Sana nasıl hitap edelim</label>
+      <input class="inp" id="pName" maxlength="24" value="${esc(S.settings.name||'')}" placeholder="Adın">
+    </div>
+    <div class="field">
+      <span class="lbl">Keseyi ne için kullanıyorsun</span>
+      <div class="chips" id="pGoals">
+        ${GOALS.map(g=>`<button class="chip${(S.settings.goals||[]).includes(g.id)?' on':''}" data-goal="${g.id}" type="button">${g.t}</button>`).join('')}
+      </div>
+    </div>
+    <button class="btn" id="pSave" type="button">Kaydet</button>
+  `);
+  const sel=new Set(S.settings.goals||[]);
+  $$('#pGoals [data-goal]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.goal;
+    sel.has(id)?sel.delete(id):sel.add(id);
+    b.classList.toggle('on',sel.has(id));haptic();
+  });
+  $('#pSave').onclick=async()=>{
+    S.settings.name=$('#pName').value.trim();
+    S.settings.goals=[...sel];
+    await save();closeSheet();toast('Profil güncellendi');
+  };
+};
 
 /* --- kategori duzenleme --- */
 function catSheet(cat){
@@ -1458,32 +2487,298 @@ $('#btnExport').onclick=()=>{
   a.href=URL.createObjectURL(blob);a.download='kese-'+iso(new Date())+'.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
+$('#btnCsv').onclick=()=>{
+  if(!S.expenses.length){toast('Dışa aktarılacak işlem yok');return;}
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const rows=[['Tarih','Saat','Tür','Kategori','Tutar','Ödeme','Kart','Açıklama']];
+  [...S.expenses].sort((a,b)=>a.ts.localeCompare(b.ts)).forEach(e=>{
+    const c=catById(e.cat),card=cardById(e.cardId);
+    rows.push([
+      e.ts.slice(0,10),e.ts.slice(11,16),
+      isExp(e)?'Gider':'Gelir',c.name,
+      String(e.amount).replace('.',','),
+      e.paymentMethod==='cash'?'Nakit':'Kart',
+      card?card.name:'',e.note||''
+    ]);
+  });
+  /* Excel'in ayraci dogru secmesi icin sep satiri, Turkce icin BOM */
+  const csv='sep=;\n'+rows.map(r=>r.map(q).join(';')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='kese-islemler-'+iso(new Date())+'.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(S.expenses.length+' işlem dışa aktarıldı');
+};
 $('#btnReset').onclick=async()=>{
-  const ok=await confirmDlg('Tüm verileri sil','İşlemler, kategoriler ve ayarlar silinecek. Bu işlem geri alınamaz.','Hepsini sil');
+  const ok=await confirmDlg('Tüm verileri sil','İşlemler, kategoriler, geri dönüşüm kutusu ve ayarlar silinecek. Bu işlem geri alınamaz.','Hepsini sil');
   if(!ok)return;
   S=JSON.parse(JSON.stringify(DEFAULTS));
-  await save();toast('Sıfırlandı');
+  await Store.set(S);
+  $('#app').hidden=true;
+  await onboard();
+  ui.type=mode()==='income'?'income':'expense';
+  ui.cat=null;resetForm();
+  $('#app').hidden=false;
+  render();toast('Sıfırlandı');
 };
+
+/* ===================================================================
+   KARSILAMA AKISI
+   Animasyondan sonra bir kez calisir: isim, kullanim modu, amaclar, butce.
+   =================================================================== */
+function modeOptionsHTML(cur){
+  const opts=[
+    {id:'expense',ic:'arrow-down',t:'Sadece gider',
+     d:'Nereye ne kadar harcadığını takip et. Bütçeni kendin belirlersin.'},
+    {id:'both',ic:'sigma',t:'Gelir ve gider',
+     d:'İkisini birlikte tut. Bütçeni gelirlerin belirler, gelir değiştikçe bütçe de değişir.'},
+    {id:'income',ic:'arrow-up',t:'Sadece gelir',
+     d:'Yalnızca gelen parayı kaydet. Bütçe sınırı ve harcama halkası olmaz.'}
+  ];
+  return opts.map(o=>`
+    <button class="opt${o.id===cur?' on':''}" data-mode="${o.id}" type="button">
+      <span class="cdot">${svgIcon(o.ic)}</span>
+      <span><b>${o.t}</b><span class="d">${o.d}</span></span>
+    </button>`).join('');
+}
+
+function onboard(){
+  return new Promise(done=>{
+    const st={
+      name:S.settings.name||'',
+      mode:S.settings.mode||'both',
+      goals:new Set(S.settings.goals||[]),
+      period:S.settings.period||'monthly',
+      ratio:S.settings.spendRatio||80,
+      budget:S.settings.budget||0
+    };
+    let step=0;
+    const LAST=4;
+    const wrap=$('#onb'), body=$('#onbBody'), bar=$('#onbBar');
+    wrap.hidden=false;
+
+    const go=n=>{step=Math.max(0,Math.min(LAST,n));paint();wrap.scrollTop=0;};
+
+    const finish=async()=>{
+      S.settings.name=st.name;
+      S.settings.mode=st.mode;
+      S.settings.goals=[...st.goals];
+      S.settings.period=st.period;
+      S.settings.spendRatio=st.ratio;
+      if(st.mode==='expense'){S.settings.budgetMode='manual';S.settings.budget=st.budget;}
+      else if(st.mode==='both'){S.settings.budgetMode='income';}
+      else {S.settings.budgetMode='manual';S.settings.budget=0;}
+      S.settings.onboarded=true;
+      ui.type=st.mode==='income'?'income':'expense';
+      ui.cat=null;
+      await Store.set(S);
+      wrap.hidden=true;
+      done();
+    };
+
+    function paint(){
+      bar.style.width=Math.round(step/LAST*100)+'%';
+      const hi=st.name?esc(st.name):'';
+
+      if(step===0){
+        body.innerHTML=`
+          <h2>Hoş geldin.<br><span class="gold">Kese</span> seni tanısın.</h2>
+          <p class="lead">Tüm veriler yalnızca bu cihazda kalır, hiçbir yere gönderilmez.
+             İstersen bu adımı boş bırakıp geçebilirsin.</p>
+          <div class="field">
+            <label class="lbl" for="oName">Sana nasıl hitap edelim</label>
+            <input class="inp" id="oName" maxlength="24" value="${esc(st.name)}" placeholder="Adın" autocomplete="given-name">
+          </div>
+          <div class="onb-actions">
+            <button class="btn" id="oNext" type="button">Devam</button>
+          </div>`;
+        $('#oNext').onclick=()=>{st.name=$('#oName').value.trim();go(1);};
+      }
+
+      else if(step===1){
+        body.innerHTML=`
+          <h2>${hi?hi+', n':'N'}e kaydedeceksin?</h2>
+          <p class="lead">Herkesin ihtiyacı aynı değil. Yalnızca gider tutmak isteyebilirsin;
+             o zaman ekleme ekranında gelir alanı hiç görünmez.</p>
+          ${modeOptionsHTML(st.mode)}
+          <div class="onb-actions">
+            <button class="btn" id="oNext" type="button">Devam</button>
+            <button class="btn sec" id="oBack" type="button">Geri</button>
+          </div>`;
+        $$('#onbBody [data-mode]').forEach(b=>b.onclick=()=>{
+          st.mode=b.dataset.mode;haptic();
+          $$('#onbBody [data-mode]').forEach(x=>x.classList.toggle('on',x===b));
+        });
+        $('#oNext').onclick=()=>go(2);
+        $('#oBack').onclick=()=>go(0);
+      }
+
+      else if(step===2){
+        body.innerHTML=`
+          <h2>Ne için kullanacaksın?</h2>
+          <p class="lead">Birden fazla seçebilirsin. Bu seçim yalnızca sana gösterilen
+             ipuçlarını ve özet metinlerini belirler.</p>
+          <div class="chips" id="oGoals">
+            ${GOALS.map(g=>`<button class="chip${st.goals.has(g.id)?' on':''}" data-goal="${g.id}" type="button">${g.t}</button>`).join('')}
+          </div>
+          <div class="onb-actions">
+            <button class="btn" id="oNext" type="button">Devam</button>
+            <button class="btn sec" id="oBack" type="button">Geri</button>
+          </div>`;
+        $$('#oGoals [data-goal]').forEach(b=>b.onclick=()=>{
+          const id=b.dataset.goal;
+          st.goals.has(id)?st.goals.delete(id):st.goals.add(id);
+          b.classList.toggle('on',st.goals.has(id));haptic();
+        });
+        $('#oNext').onclick=()=>go(3);
+        $('#oBack').onclick=()=>go(1);
+      }
+
+      else if(step===3){
+        const periodSeg=`
+          <div class="field">
+            <span class="lbl">Bütçe dönemi</span>
+            <div class="seg" style="grid-template-columns:1fr 1fr" id="oPeriod">
+              <button data-p="weekly" class="${st.period==='weekly'?'on':''}" type="button">Haftalık</button>
+              <button data-p="monthly" class="${st.period==='monthly'?'on':''}" type="button">Aylık</button>
+            </div>
+          </div>`;
+        if(st.mode==='income'){
+          body.innerHTML=`
+            <h2>Bütçe gerekmiyor</h2>
+            <p class="lead">Sadece gelir kaydettiğin için harcama sınırı ve bütçe halkası kurulmaz.
+               Özet ekranı gelir toplamını gösterir. Sonradan Ayarlar’dan gideri de açabilirsin.</p>
+            <div class="onb-actions">
+              <button class="btn" id="oNext" type="button">Devam</button>
+              <button class="btn sec" id="oBack" type="button">Geri</button>
+            </div>`;
+        }else if(st.mode==='both'){
+          body.innerHTML=`
+            <h2>Bütçeni gelirlerin belirlesin</h2>
+            <p class="lead">Sabit bir rakam yazmana gerek yok. Gelirini kaydettikçe bütçe
+               kendiliğinden güncellenir. Geri kalan kısım tasarruf hedefin olur.</p>
+            ${periodSeg}
+            <div class="field">
+              <span class="lbl">Gelirinin ne kadarını harcamak istiyorsun</span>
+              <div class="seg" style="grid-template-columns:repeat(4,1fr)" id="oRatio">
+                ${[60,70,80,90].map(v=>`<button data-r="${v}" class="${v===st.ratio?'on':''}" type="button">%${v}</button>`).join('')}
+              </div>
+            </div>
+            <p class="note" id="oRatioNote"></p>
+            <div class="onb-actions">
+              <button class="btn" id="oNext" type="button">Devam</button>
+              <button class="btn sec" id="oBack" type="button">Geri</button>
+            </div>`;
+          const paintNote=()=>{
+            $('#oRatioNote').textContent=
+              '10.000 ₺ gelir kaydedersen bütçen '+nf0.format(10000*st.ratio/100)+
+              ' ₺ olur, '+nf0.format(10000*(100-st.ratio)/100)+' ₺ tasarrufta kalır.';
+          };
+          paintNote();
+          $$('#oRatio button').forEach(b=>b.onclick=()=>{
+            st.ratio=+b.dataset.r;haptic();
+            $$('#oRatio button').forEach(x=>x.classList.toggle('on',x===b));
+            paintNote();
+          });
+        }else{
+          body.innerHTML=`
+            <h2>Harcama sınırın ne olsun?</h2>
+            <p class="lead">Bu dönemde aşmak istemediğin tutarı yaz. Boş bırakabilir,
+               sonradan Ayarlar’dan da değiştirebilirsin.</p>
+            ${periodSeg}
+            <div class="field">
+              <label class="lbl" for="oBudget">Bütçe tutarı</label>
+              <input class="inp num" id="oBudget" type="text" inputmode="numeric" placeholder="0" value="${st.budget?nf0.format(st.budget):''}">
+            </div>
+            <div class="onb-actions">
+              <button class="btn" id="oNext" type="button">Devam</button>
+              <button class="btn sec" id="oBack" type="button">Geri</button>
+            </div>`;
+          $('#oBudget').addEventListener('input',e=>{
+            const raw=e.target.value.replace(/\D/g,'');e.target.value=raw?nf0.format(+raw):'';
+          });
+        }
+        $$('#oPeriod button').forEach(b=>b.onclick=()=>{
+          st.period=b.dataset.p;haptic();
+          $$('#oPeriod button').forEach(x=>x.classList.toggle('on',x===b));
+        });
+        $('#oNext').onclick=()=>{
+          if($('#oBudget'))st.budget=parseAmt($('#oBudget').value);
+          go(4);
+        };
+        $('#oBack').onclick=()=>go(2);
+      }
+
+      else{
+        const budLine=st.mode==='both'
+          ? 'Gelirinin %'+st.ratio+'’i'
+          : st.mode==='expense'
+            ? (st.budget?money(st.budget):'Belirlenmedi')
+            : 'Yok';
+        body.innerHTML=`
+          <h2>Hazırsın${hi?', '+hi:''}.</h2>
+          <p class="lead">Bu ayarların hepsi Ayarlar ekranından değiştirilebilir.</p>
+          <div class="card">
+            <div class="statline"><span class="k">Kayıt türü</span><span class="v">${MODE_LABEL[st.mode]}</span></div>
+            <div class="statline"><span class="k">Bütçe dönemi</span><span class="v">${st.period==='weekly'?'Haftalık':'Aylık'}</span></div>
+            <div class="statline"><span class="k">Bütçe</span><span class="v">${budLine}</span></div>
+            <div class="statline"><span class="k">Amaç</span><span class="v" style="font-weight:600;font-size:var(--t-xs)">${st.goals.size?[...st.goals].map(id=>(GOALS.find(g=>g.id===id)||{}).t).join(', '):'belirtilmedi'}</span></div>
+          </div>
+          <div class="onb-actions">
+            <button class="btn" id="oGo" type="button">Keseyi aç</button>
+            <button class="btn sec" id="oBack" type="button">Geri</button>
+          </div>`;
+        $('#oGo').onclick=finish;
+        $('#oBack').onclick=()=>go(3);
+      }
+      hydrateIcons(body);
+    }
+    paint();
+  });
+}
 
 /* ===================================================================
    BASLAT
    =================================================================== */
+/* iOS'ta iki parmakla ve cift dokunusla yakinlastirmayi kapat.
+   touch-action:manipulation cift dokunusu, buradaki dinleyiciler pinch'i keser. */
+['gesturestart','gesturechange','gestureend'].forEach(t=>
+  document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length>1)e.preventDefault();
+},{passive:false});
+
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
 (async function init(){
+  const splashUntil=Date.now()+1750;   /* animasyonun tamamlanmasi icin en az sure */
+
   const saved=await Store.get();
   S=saved?Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),saved):JSON.parse(JSON.stringify(DEFAULTS));
   if(!S.settings)S.settings={...DEFAULTS.settings};
+  S.settings=Object.assign({},DEFAULTS.settings,S.settings);
   if(!Array.isArray(S.expenses))S.expenses=[];
   if(!S.categories?.length){S.categories=JSON.parse(JSON.stringify(DEFAULTS.categories));S.settings.catSeed=3;}
   migrate();
+  purgeTrash();
   await Store.set(S);
 
   hydrateIcons(document);
-  resetForm();
   const n=new Date();
   $('#rFrom').value=iso(new Date(n.getFullYear(),n.getMonth(),1));
   $('#rTo').value=iso(n);
   ui.from=$('#rFrom').value;ui.to=$('#rTo').value;
 
+  /* animasyon suresini doldur, sonra perdeyi kaldir */
+  await wait(Math.max(splashUntil-Date.now(),0));
+  $('#splash').classList.add('gone');
+  setTimeout(()=>{const s=$('#splash');if(s)s.remove();},600);
+
+  /* ilk acilis: karsilama akisi */
+  if(!S.settings.onboarded) await onboard();
+
+  ui.type=mode()==='income'?'income':'expense';
+  resetForm();
   $('#boot').remove();
   $('#app').hidden=false;
   render();
@@ -1493,6 +2788,9 @@ $('#btnReset').onclick=async()=>{
     const t=setInterval(()=>{if(chartReady()){clearInterval(t);render();}},250);
     setTimeout(()=>clearInterval(t),8000);
   }
+
+  /* geri donusum kutusu: suresi dolanlari periyodik temizle */
+  setInterval(async()=>{ if(purgeTrash()) await save(); },60000);
 
   /* PWA: yalnizca gercek origin'de */
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
